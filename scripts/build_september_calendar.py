@@ -72,6 +72,42 @@ def banner(ws, row, text, span=7, size=11, bg=FILL_HEADER, fg=CREAM, bold=True):
         ws.cell(row=row, column=col).border = BOX
     return c
 
+# ------------------------------------------------------------- inspo link table
+# Supplied by the client. NOT REVIEWED — instagram.com is blocked by this
+# session's network egress proxy, so none of these could be opened here.
+LINKS = {
+    "REEL 1 · All Of It":                    "https://www.instagram.com/p/DadUztOMe56/",
+    "STATIC 1 · The Lake Is The View":       "https://www.instagram.com/p/DcQEepBDakg/?img_index=2",
+    "CAROUSEL 1 · What A Weekday Gets You":  "https://www.instagram.com/p/DbsuoOVjPzV/",
+    "REEL 2 · The Pool, Day To Night":       "https://www.instagram.com/p/DceNoWbyQnA/",
+    "CAROUSEL 2 · Seven Things Inside":      "https://www.instagram.com/p/DcVqkH6CP9E/",
+    "STATIC 2 · Ganpati Greeting":           "https://www.instagram.com/p/DbA4f-sNjtf/",
+    "CAROUSEL 3 · A Guide To Karjat":        "https://www.instagram.com/p/Db71wKNAOQr/",
+    "REEL 3 · After The City":               "https://www.instagram.com/p/DbvH3GeJSR0/",
+    "CAROUSEL 4 · Who It's For":             "https://www.instagram.com/p/DcX2SH-iByn/",
+    "REEL 4 · October Is Clear":             "https://www.instagram.com/p/DcYxp75p8GM/",
+    "REEL 5 · Book Now":                     "https://www.instagram.com/p/DcOTWy6ML1t/?igsi=MWtjOHB0NnIybzgwYw==",
+    "FONT REFERENCE":                        "https://www.instagram.com/p/Dblrpj-E_Lf/?img_index=1&igsi=cWd0amt3MXdqZnAw",
+}
+ACCOUNT   = "https://www.instagram.com/bougainvillaresorts/"
+AUGUST_CC = "https://docs.google.com/spreadsheets/d/11LoupuCnND-cbPLo_sRouKiM7wiTdfpYL_T730yC8_k/edit"
+SOURCE_CC = "https://docs.google.com/spreadsheets/d/16MkXCAyTYa9LaKJd0rAt-JwzQyvtple8v7dhTFcl3SE/edit"
+
+GRID_LINKS = {
+    5:  ("FONT REFERENCE", "Font reference — pick ONE face"),
+    7:  ("REEL 1 · All Of It", "Reel 1 inspo"),
+    8:  ("STATIC 1 · The Lake Is The View", "Static 1 inspo"),
+    9:  ("CAROUSEL 1 · What A Weekday Gets You", "Carousel 1 inspo"),
+    10: ("REEL 2 · The Pool, Day To Night", "Reel 2 inspo"),
+    11: ("CAROUSEL 2 · Seven Things Inside", "Carousel 2 inspo"),
+    14: ("STATIC 2 · Ganpati Greeting", "Static 2 inspo"),
+    16: ("CAROUSEL 3 · A Guide To Karjat", "Carousel 3 inspo"),
+    21: ("REEL 3 · After The City", "Reel 3 inspo"),
+    23: ("CAROUSEL 4 · Who It's For", "Carousel 4 inspo"),
+    28: ("REEL 4 · October Is Clear", "Reel 4 inspo"),
+    30: ("REEL 5 · Book Now", "Reel 5 inspo"),
+}
+
 wb = Workbook()
 
 # ==================================================================== SHEET 1
@@ -81,7 +117,7 @@ ws.title = "September 2026"
 banner(ws, 1, "SEPTEMBER 2026  ·  BOUGAINVILLA RESORTS  ·  CONTENT CALENDAR", size=13)
 ws.row_dimensions[1].height = 28
 banner(ws, 2,
-       "10% off Mon–Thu  ·  rates on the OFFERS highlight only, nowhere else  ·  "
+       "RUNS MON 7 SEP → WED 30 SEP  ·  10% off Mon–Thu  ·  rates on the OFFERS highlight only  ·  "
        "WhatsApp only  ·  Ganpati Sep 14–24  ·  Pitru Paksha from Sep 26",
        size=10, bg=FILL_SUBHEAD, fg=BRAND_BROWN, bold=False)
 ws.row_dimensions[2].height = 22
@@ -101,42 +137,43 @@ KIND_FILL = {R: FILL_REEL, C: FILL_CAROUSEL, S: FILL_STATIC,
              T: FILL_STORY, F_: FILL_FESTIVAL, Q: FILL_QUIET}
 
 WEEKS = [
-    # ---- week 1 : Sep 1-6 (no Monday)
+    # ---- production week : Sep 1-6, nothing posts
     [
         (None, "", None),
-        ("1", "REEL 1 · 9:30 PM\nALL OF IT\n\nThe whole house in one take — exterior, living, "
-              "stairs, pool, lake. Opens the month and sets the asset list.\n\n"
-              "Native audio. Held shots.\n\nCTA: WhatsApp", R),
-        ("2", "CAROUSEL 1 · 9:30 AM\nWHAT A WEEKDAY GETS YOU\n\nTHE OFFER CAROUSEL — moved to "
-              "week one. The back half of September is dead; this must land now.\n\n"
-              "6 slides. Final slide = WhatsApp card. No rupee figures.\n\nCTA: WhatsApp", C),
-        ("3", "STATIC 1 · 9:30 AM\nTHE LAKE IS THE VIEW\n\nLake-facing hero. The asset August "
-              "never used once.\n\nNumber + WhatsApp icon, bottom third, brand brown.\n\n"
-              "CTA: WhatsApp", S),
-        ("4", "STORIES 1–2 · 9:30 AM\n\n1 · VILLA — quick overall tour\n2 · ROOMS — all four "
-              "bedrooms\n\n>> SEEDS: THE VILLA, ROOMS", T),
-        ("5", "STORY 3 · 9:30 PM\nPOOL\n\nInfinity pool, day into night.\n\n>> SEEDS: POOL", T),
-        ("6", ">> BUILD HIGHLIGHTS:\nTHE VILLA · ROOMS\n\nFirst two highlights go live off "
-              "this week's stories.", Q),
+        ("1", "NO POST — production week.\n\nThe calendar starts Mon Sep 7 and finishes Wed "
+              "Sep 30. Nothing publishes before Sep 7.", Q),
+        ("2", "SHOOT — everything for week 1.\n\nReel 1, Static 1, Carousel 1, Reel 2, "
+              "Carousel 2 and Stories 1–10 all publish between Sep 7 and Sep 13. They must be "
+              "shot and cut now.", Q),
+        ("3", "SHOOT / EDIT", Q),
+        ("4", "SHOOT / EDIT", Q),
+        ("5", "DESIGN — Carousel 1 and Static 1 to the designer.", Q),
+        ("6", "APPROVALS due end of day.\n\nWeek 1 carries 5 of the month's 11 feed pieces. "
+              "Nothing in it can slip.", Q),
     ],
-    # ---- week 2 : Sep 7-13
+    # ---- week 1 : Sep 7-13   THE ONLY SELLING WEEK
     [
-        ("7", "REEL 2 · 9:30 PM\nTHE POOL, DAY TO NIGHT\n\nMorning → sunset → night → lake.\n\n"
-              "The 2 PM weekday shot with nobody in it is the one that sells.\n\nCTA: WhatsApp", R),
-        ("8", "STORIES 4–5 · 9:30 AM\n\n4 · LAKE VIEW\n5 · AMENITIES — gym, theatre, library, "
-              "games", T),
-        ("9", "CAROUSEL 2 · 9:30 AM\nSEVEN THINGS INSIDE\n\nPool · lake · theatre · gym · "
-              "games · library · garden.\n\nSells the experience, not the amenity list.\n\n"
-              "CTA: Save + WhatsApp", C),
-        ("10", "STORIES 6–7 · 9:30 AM\n\n6 · GAMES — snooker, TT, carrom [Poll]\n7 · THEATRE\n\n"
-               ">> SEEDS: EXPERIENCES", T),
-        ("11", "STORIES 8–9 · 9:30 PM\n\n8 · KITCHEN\n9 · OUTDOOR — garden, poolside", T),
-        ("12", "STORY 10 · 9:30 AM\nCAPACITY\n\n4BHK, bathrooms, group suitability. [Poll]\n\n"
-               ">> SEEDS: GROUPS", T),
-        ("13", "GANPATI EVE — quiet.\nHouseholds are decorating and bringing the murti home.\n\n"
-               ">> BUILD HIGHLIGHTS:\nEXPERIENCES · POOL", Q),
+        ("7", "REEL 1 · 9:30 PM\nALL OF IT\n\nThe whole house in one take — exterior, living, "
+              "stairs, pool, lake. Opens the month.\n\nCTA: WhatsApp\n\n────────\n"
+              "STORY 1 · 9:30 AM\nVILLA — overall tour", R),
+        ("8", "STATIC 1 · 9:30 AM\nTHE LAKE IS THE VIEW\n\nLake-facing hero. The asset August "
+              "never used.\n\nNumber + WhatsApp icon, brand brown.\n\n────────\n"
+              "STORY 2 · 9:30 PM\nROOMS — all four bedrooms", S),
+        ("9", "CAROUSEL 1 · 9:30 AM\nWHAT A WEEKDAY GETS YOU\n\nTHE OFFER CAROUSEL. This is "
+              "the only selling week in the month — it has to land here.\n\n7 slides. Final "
+              "slide = WhatsApp card. No rupee figures.\n\n────────\nSTORY 3 · 9:30 PM\nPOOL", C),
+        ("10", "REEL 2 · 9:30 PM\nTHE POOL, DAY TO NIGHT\n\nMorning → sunset → night → lake."
+               "\n\nThe 2 PM weekday shot with nobody in it is the one that sells.\n\n"
+               "────────\nSTORY 4 · 9:30 AM\nLAKE VIEW", R),
+        ("11", "CAROUSEL 2 · 9:30 AM\nSEVEN THINGS INSIDE\n\nPool · lake · theatre · gym · "
+               "games · library · garden.\n\nCTA: Save + WhatsApp\n\n────────\n"
+               "STORIES 5–6 · 9:30 PM\nAMENITIES · GAMES [Poll]", C),
+        ("12", "STORIES 7–8 · 9:30 AM\n\n7 · THEATRE\n8 · KITCHEN\n\n>> SEEDS: EXPERIENCES", T),
+        ("13", "STORIES 9–10 · 9:30 AM\n\n9 · OUTDOOR\n10 · CAPACITY [Poll]\n\n"
+               "GANPATI EVE — no feed post.\n\n>> BUILD HIGHLIGHTS:\n"
+               "VILLA · ROOMS · POOL · EXPERIENCES", T),
     ],
-    # ---- week 3 : Sep 14-20
+    # ---- week 2 : Sep 14-20   GANPATI
     [
         ("14", "GANESH CHATURTHI [CONFIRM DATE]\n\nSTATIC 2 · 9:00 AM\nGANPATI GREETING\n\n"
                "Greeting only. NO offer, NO CTA, NO discount, NO clip-art, NO murti imagery.\n\n"
@@ -152,31 +189,32 @@ WEEKS = [
         ("19", "STORY 13 · 9:30 AM\nPET FRIENDLY\n\nPolicy + which spaces. [Question box]", T),
         ("20", "Quiet. Gauri and visarjan for many households.\n\n>> BUILD HIGHLIGHT: KARJAT", Q),
     ],
-    # ---- week 4 : Sep 21-27
+    # ---- week 3 : Sep 21-27   RE-ENTRY
     [
         ("21", "REEL 3 · 9:30 PM\nAFTER THE CITY\n\nTen days of the city, now this. Groups, "
-               "friends, celebrations.\n\nThe re-entry reel — first push since Sep 13.\n\n"
-               "CTA: WhatsApp", R),
-        ("22", "STORIES 14–15 · 9:30 AM\n\n14 · STAY — what to expect\n15 · CELEBRATIONS\n\n"
+               "friends, celebrations.\n\nFirst push since Sep 11.\n\nCTA: WhatsApp\n\n"
+               "────────\nSTORY 14 · 9:30 AM\nSTAY", R),
+        ("22", "STORY 15 · 9:30 AM\nCELEBRATIONS\n\nBirthdays, anniversaries, gatherings.\n\n"
                ">> SEEDS: GROUPS", T),
         ("23", "CAROUSEL 4 · 9:30 AM\nWHO IT'S FOR\n\nFriends · families · celebrations · "
                "capacity · private villa.\n\nThe whole villa goes to one group. Always.\n\n"
-               "CTA: WhatsApp", C),
+               "CTA: WhatsApp\n\n────────\nSTORY 16 · 9:30 PM\nREVIEWS", C),
         ("24", "ANANT CHATURDASHI · VISARJAN [CONFIRM DATE]\n\nSilent. No post.", F_),
-        ("25", "STORY 16 · 9:30 PM\nREVIEWS\n\nGuest feedback, verbatim. [3 reviews needed]", T),
-        ("26", "STORY 17 · 9:30 AM\nCHECK-IN\n\nProcess and timings.\n\n"
-               "PITRU PAKSHA BEGINS [CONFIRM]\nNo offer content from here to month end.", T),
+        ("25", "STORY 17 · 9:30 AM\nCHECK-IN\n\nProcess and timings.", T),
+        ("26", "PITRU PAKSHA BEGINS [CONFIRM]\n\nSTORY 18 · 9:30 AM\nRULES\n\n"
+               "No offer content from here to month end.", F_),
         ("27", "Quiet.\n\n>> BUILD HIGHLIGHT: GROUPS", Q),
     ],
-    # ---- week 5 : Sep 28-30
+    # ---- week 4 : Sep 28-30   CLOSE
     [
         ("28", "REEL 4 · 9:30 PM\nOCTOBER IS CLEAR\n\nPost-monsoon — the green without the "
-               "rain. Pre-sells Navratri and Diwali.\n\nNo September offer anywhere in this.\n\n"
-               "CTA: WhatsApp", R),
-        ("29", "STORIES 18–19 · 9:30 AM\n\n18 · RULES\n19 · FAQs [Question box]", T),
-        ("30", "STORY 20 · 9:30 AM\nBOOK NOW\n\n────────────\n\nREEL 5 · 9:30 PM\nBOOK NOW\n\n"
-               "Closes the month on conversion, pointed at October.\n\n"
-               ">> BUILD HIGHLIGHT: OFFERS\n(built last, pinned first)", R),
+               "rain. Pre-sells Navratri and Diwali.\n\nNo September offer anywhere in this."
+               "\n\n────────\nSTORY 19 · 9:30 AM\nFAQs [Question box]", R),
+        ("29", "STORY 20 · 9:30 AM\nBOOK NOW\n\nWhatsApp / call / DM. [Link sticker]\n\n"
+               ">> SEEDS: OFFERS", T),
+        ("30", "REEL 5 · 9:30 PM\nBOOK NOW\n\nCloses the month on conversion, pointed at "
+               "October.\n\n>> BUILD HIGHLIGHT: OFFERS\n(built last, pinned first)\n\n"
+               ">> SET TRAY ORDER — add one frame to each highlight in REVERSE order today.", R),
         (None, "", None),
         (None, "", None),
         (None, "", None),
@@ -204,6 +242,22 @@ for week in WEEKS:
     ws.row_dimensions[row + 1].height = 172
     row += 2
 
+# ---- stamp the inspo links into the grid cells and make them clickable
+DATE_POS = {}
+body_rows = [5, 7, 9, 11, 13]
+for bi, week in enumerate(WEEKS):
+    for ci, (lbl, _b, _k) in enumerate(week, start=1):
+        if lbl and lbl.isdigit():
+            DATE_POS[int(lbl)] = (body_rows[bi], ci)
+
+for day, (piece, cap) in GRID_LINKS.items():
+    br, col = DATE_POS[day]
+    cell = ws.cell(row=br, column=col)
+    url = LINKS[piece]
+    cell.value = (cell.value or "") + "\n\n▸ " + cap + ":\n" + url
+    cell.hyperlink = url
+    cell.font = f(8.5, color="1155CC")
+
 # ---- legend + notes
 row += 1
 banner(ws, row, "LEGEND"); row += 1
@@ -229,11 +283,12 @@ RULES = [
     "not green. Every carousel ends on a full WhatsApp slide, not a corner overlay.",
     "NEW — Prices appear on the OFFERS highlight frames and NOWHERE ELSE. This is a scoped "
     "exception to the August no-rates rule, not permission to put rates on statics or in feed.",
-    "NEW — Shravan has ended, so non-veg and bar imagery are technically permitted again from "
-    "Sep 1. Do not use them from Sep 14 onward: much of this audience is vegetarian through "
-    "Ganpati and strictly so through Pitru Paksha. Safe window is Sep 1–13 only.",
-    "NEW — No offer content at all Sep 14–24 (Ganpati) or Sep 26–30 (Pitru Paksha). "
-    "Offer creative runs Sep 1–13 and then stops.",
+    "NEW — Shravan has ended, so non-veg and bar imagery are permitted again. Do not use them "
+    "from Sep 14 onward: much of this audience is vegetarian through Ganpati and strictly so "
+    "through Pitru Paksha. Safe window is Sep 7–13 only.",
+    "NEW — The month posts Sep 7–30. Sep 1–6 is production time, nothing publishes. No offer "
+    "content at all Sep 14–24 (Ganpati) or Sep 26–30 (Pitru Paksha) — which leaves Sep 7–13 as "
+    "the ONLY selling week. It carries 5 of the 11 feed pieces. Nothing in it can slip.",
     "NEW — No Ganpati murti imagery, no idol photography, no visarjan footage. A greeting, a "
     "diya, a marigold detail, the villa. Nothing devotional used as a marketing frame.",
     "NEW — The lake is a headline asset this month. It appears nowhere in August. It gets a "
@@ -255,6 +310,21 @@ REACTIVE = [
 ]
 for r in REACTIVE:
     banner(ws, row, r, bg=WARM_WHITE, fg=BRAND_BROWN, bold=False, size=9)
+    row += 1
+row += 1
+
+row += 1
+banner(ws, row, "REFERENCE LINKS"); row += 1
+for label, url in [("Instagram account", ACCOUNT),
+                   ("August 2026 content calendar (source structure)", AUGUST_CC),
+                   ("Bougain Villa Content machine (working sheet)", SOURCE_CC),
+                   ("Font reference for the designer", LINKS["FONT REFERENCE"])]:
+    style_cell(ws, "A" + str(row), label, f(9, bold=True), WARM_WHITE)
+    ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=7)
+    c = style_cell(ws, "B" + str(row), url, f(9, color="1155CC"), WARM_WHITE)
+    c.hyperlink = url
+    for col in range(2, 8):
+        ws.cell(row=row, column=col).border = BOX
     row += 1
 row += 1
 
@@ -327,7 +397,7 @@ def section(s, row, text, span, bg=FILL_SUBHEAD):
 # ==================================================================== SHEET 2
 W = [26, 10, 40, 40, 40]
 s2 = new_sheet("Designer Brief", W,
-               "SEPTEMBER 2026  ·  DESIGNER BRIEF",
+               "SEPTEMBER 2026  ·  DESIGNER BRIEF  ·  posts Sep 7–30",
                "Same structure as the August brief. Sections 1–4 are carried over "
                "unchanged unless marked SEPTEMBER. Section 5 is piece-by-piece; "
                "section 6 is new — highlight covers.")
@@ -409,55 +479,55 @@ head_row(s2, r, ["PIECE", "SLIDE", "VISUAL", "ON-SCREEN COPY", "NOTES"])
 r += 1
 
 PIECES = [
-    ("REEL 1 · All Of It · Sep 1", "—",
+    ("REEL 1 · All Of It · Sep 7", "—",
      "One continuous move through the house: exterior, living room, stairs, pool deck, lake. Held shots, no whip transitions.",
      "the whole house.\nin one go.",
      "Opens the month. Native audio, minimal music bed. Establishes every asset the rest of the month refers back to. 25–35 sec."),
-    ("CAROUSEL 1 · What A Weekday Gets You · Sep 2", "1",
+    ("CAROUSEL 1 · What A Weekday Gets You · Sep 9", "1",
      "The pool, empty, morning light.", "what a weekday gets you.",
      "Cover. THE hardest-working piece of the month — moved to week one because the back half of September has no demand."),
-    ("CAROUSEL 1 · What A Weekday Gets You · Sep 2", "2",
+    ("CAROUSEL 1 · What A Weekday Gets You · Sep 9", "2",
      "The pool again, wider, nobody in it.", "the pool. nobody in it.", ""),
-    ("CAROUSEL 1 · What A Weekday Gets You · Sep 2", "3",
+    ("CAROUSEL 1 · What A Weekday Gets You · Sep 9", "3",
      "The lake from the deck, mid-morning.", "the lake. still there.",
      "New slide vs August — the lake is this month's headline asset."),
-    ("CAROUSEL 1 · What A Weekday Gets You · Sep 2", "4",
+    ("CAROUSEL 1 · What A Weekday Gets You · Sep 9", "4",
      "The theatre, screen glow.", "the cinema. at 3pm.",
      "The differentiator. No competing Karjat villa has this."),
-    ("CAROUSEL 1 · What A Weekday Gets You · Sep 2", "5",
+    ("CAROUSEL 1 · What A Weekday Gets You · Sep 9", "5",
      "Wide interior, empty, warm.", "the whole villa. just yours.", ""),
-    ("CAROUSEL 1 · What A Weekday Gets You · Sep 2", "6",
+    ("CAROUSEL 1 · What A Weekday Gets You · Sep 9", "6",
      "Full cream card, type only.", "monday to thursday. 10% off.",
      "No rupee figure. None."),
-    ("CAROUSEL 1 · What A Weekday Gets You · Sep 2", "7",
+    ("CAROUSEL 1 · What A Weekday Gets You · Sep 9", "7",
      "Full cream card.", "ask us for this week's dates.", "WhatsApp lockup."),
-    ("STATIC 1 · The Lake Is The View · Sep 3", "—",
+    ("STATIC 1 · The Lake Is The View · Sep 8", "—",
      "Lake-facing frame — the pool edge running into the lake, or the deck looking out. Huge negative space in the sky.",
      "the lake was here first.\nwe just pointed the house at it.",
      "The asset August never used. Type sits in the sky or the water, never over the horizon line. Number + WhatsApp icon bottom third, brand brown."),
-    ("REEL 2 · The Pool, Day To Night · Sep 7", "—",
+    ("REEL 2 · The Pool, Day To Night · Sep 10", "—",
      "Same pool, four times of day, cut in order: morning cold light, six o'clock orange on the lake, nine o'clock with the lights on, and 2 PM on a weekday with nobody in it.",
      "one pool.\nfour times of day.",
      "The 2 PM weekday shot is the one that sells — hold it longest. Feeds the POOL highlight directly."),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "1",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "1",
      "Wide interior, warm, looking through to the pool.", "seven reasons the car stays parked.",
      "Cover. Sells the experience, not the amenity list."),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "2",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "2",
      "Infinity pool.", "one · the pool that doesn't end.", ""),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "3",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "3",
      "Lake view from the deck.", "two · the lake.", ""),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "4",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "4",
      "Home theatre, screen glow, seats.", "three · the cinema.", ""),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "5",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "5",
      "Gym, and the games room — snooker, TT, carrom. Split or two frames.",
      "four · the gym.\nfive · snooker, tt, carrom.",
      "CONFIRM these are installed and shootable before this slide is designed."),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "6",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "6",
      "The library corner, warm lamp.", "six · the library.",
      "The unexpected one. Nobody advertises a library — that is exactly why it gets saved."),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "7",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "7",
      "Garden, early evening.", "seven · the garden.", ""),
-    ("CAROUSEL 2 · Seven Things Inside · Sep 9", "8",
+    ("CAROUSEL 2 · Seven Things Inside · Sep 11", "8",
      "Full cream card.", "all of it, for one group.", "WhatsApp lockup."),
     ("STATIC 2 · Ganpati Greeting · Sep 14 · 9:00 AM", "—",
      "Warm frame — a diya, a marigold detail, or the villa entrance at first light. Family-suggestive without any people and without any idol.",
@@ -539,38 +609,37 @@ print("sheet 2 done, rows", r)
 
 # ==================================================================== SHEET 3
 s3 = new_sheet("Stories", [5, 11, 8, 10, 20, 30, 30, 20, 22],
-               "SEPTEMBER 2026  ·  STORIES  ·  all 20, in order",
+               "SEPTEMBER 2026  ·  STORIES  ·  all 20, Sep 7–30",
                "Stories are the raw material. Highlights are assembled from them — which is "
                "why every highlight build date sits AFTER the stories that fill it. "
                "On-screen copy is set verbatim, lowercase, two lines split at the ' / '.")
 head_row(s3, 3, ["#", "Date", "Day", "Time", "Story", "On-screen copy", "Visual",
                  "Sticker / CTA", "→ Highlight"])
 STORIES = [
-    (1, "Sep 4", "Fri", "9:30 AM", "VILLA", "all of it. / in ninety seconds.",
+    (1, "Sep 7", "Mon", "9:30 AM", "VILLA", "all of it. / in ninety seconds.",
      "One continuous walk: gate, exterior, living room, stairs, pool deck, lake. No cuts if possible.",
      "—", "VILLA"),
-    (2, "Sep 4", "Fri", "9:30 AM", "ROOMS", "four bedrooms. / no one gets the sofa.",
+    (2, "Sep 8", "Tue", "9:30 PM", "ROOMS", "four bedrooms. / no one gets the sofa.",
      "Each bedroom, warm lamp on, bed made. Vary the light between them so it doesn't read as one room.",
      "—", "ROOMS"),
-    (3, "Sep 5", "Sat", "9:30 PM", "POOL", "the infinity pool. / it doesn't end.",
+    (3, "Sep 9", "Wed", "9:30 PM", "POOL", "the infinity pool. / it doesn't end.",
      "The edge where the water meets the lake. Hold the shot.", "—", "POOL"),
-    (4, "Sep 8", "Tue", "9:30 AM", "LAKE VIEW", "the lake was here first. / we just pointed the house at it.",
+    (4, "Sep 10", "Thu", "9:30 AM", "LAKE VIEW", "the lake was here first. / we just pointed the house at it.",
      "From the deck, looking out. Morning haze if you can get it.", "—", "VILLA · POOL · KARJAT"),
-    (5, "Sep 8", "Tue", "9:30 AM", "AMENITIES", "there is more inside / than you'd expect.",
+    (5, "Sep 11", "Fri", "9:30 PM", "AMENITIES", "there is more inside / than you'd expect.",
      "Fast set: gym, theatre door, library shelf, games table. Four beats, no captions on each.",
      "—", "EXPERIENCES"),
-    (6, "Sep 10", "Thu", "9:30 AM", "GAMES", "snooker. table tennis. carrom. / someone always loses.",
+    (6, "Sep 11", "Fri", "9:30 PM", "GAMES", "snooker. table tennis. carrom. / someone always loses.",
      "Hands on the table, mid-game. Movement, not a still room.",
      "Poll: snooker / tt / carrom", "EXPERIENCES"),
-    (7, "Sep 10", "Thu", "9:30 AM", "THEATRE", "and there is a cinema. / inside the house.",
+    (7, "Sep 12", "Sat", "9:30 AM", "THEATRE", "and there is a cinema. / inside the house.",
      "Screen glow, seats, lights low. Shot from the back row.", "—", "EXPERIENCES"),
-    (8, "Sep 11", "Fri", "9:30 PM", "KITCHEN", "cook, or don't. / both are handled.",
-     "Open kitchen, counter laid out, something actually on the hob.",
-     "—", "EXPERIENCES"),
-    (9, "Sep 11", "Fri", "9:30 PM", "OUTDOOR", "the garden at six. / the poolside at nine.",
+    (8, "Sep 12", "Sat", "9:30 AM", "KITCHEN", "cook, or don't. / both are handled.",
+     "Open kitchen, counter laid out, something actually on the hob.", "—", "EXPERIENCES"),
+    (9, "Sep 13", "Sun", "9:30 AM", "OUTDOOR", "the garden at six. / the poolside at nine.",
      "Two shots, split screen or back to back — golden hour garden, lit poolside at night.",
      "—", "EXPERIENCES"),
-    (10, "Sep 12", "Sat", "9:30 AM", "CAPACITY", "four bedrooms. sleeps [CONFIRM N]. / bring everyone.",
+    (10, "Sep 13", "Sun", "9:30 AM", "CAPACITY", "four bedrooms. sleeps [CONFIRM N]. / bring everyone.",
      "Plan-view graphic on cream, or the four doorways lit down a corridor.",
      "Poll: friends / family", "GROUPS"),
     (11, "Sep 17", "Thu", "9:30 AM", "LOCATION", "karjat. / the green starts before the exit.",
@@ -581,23 +650,23 @@ STORIES = [
     (13, "Sep 19", "Sat", "9:30 AM", "PET FRIENDLY", "your dog is invited. / the garden is theirs.",
      "A dog in the garden or on the deck. If there is no resident dog, shoot a guest's — do not stock-image this.",
      "Question box", "GROUPS"),
-    (14, "Sep 22", "Tue", "9:30 AM", "STAY", "arrive at two. / stop checking your phone by four.",
+    (14, "Sep 21", "Mon", "9:30 AM", "STAY", "arrive at two. / stop checking your phone by four.",
      "Arrival beat: car doors, bags down, first drink on the deck.", "—", "VILLA"),
     (15, "Sep 22", "Tue", "9:30 AM", "CELEBRATIONS", "birthdays. anniversaries. / the whole house is yours.",
      "A laid long table, or the garden lit at night. No balloons, no props, no banners.",
      "—", "GROUPS"),
-    (16, "Sep 25", "Fri", "9:30 PM", "REVIEWS", "[review 1 verbatim]",
+    (16, "Sep 23", "Wed", "9:30 PM", "REVIEWS", "[review 1 verbatim]",
      "Review text on a cream card, paired with a photo of the exact space it mentions. Three frames, one review each.",
      "—", "GROUPS"),
-    (17, "Sep 26", "Sat", "9:30 AM", "CHECK-IN", "check in [CONFIRM]. / check out [CONFIRM].",
+    (17, "Sep 25", "Fri", "9:30 AM", "CHECK-IN", "check in [CONFIRM]. / check out [CONFIRM].",
      "Cream card, type only. Keys, or the front door.", "—", "OFFERS"),
-    (18, "Sep 29", "Tue", "9:30 AM", "RULES", "a few house rules. / all of them reasonable.",
+    (18, "Sep 26", "Sat", "9:30 AM", "RULES", "a few house rules. / all of them reasonable.",
      "Cream cards. Four rules maximum, one per frame. Noise, pool timings, pets, smoking.",
      "—", "OFFERS"),
-    (19, "Sep 29", "Tue", "9:30 AM", "FAQs", "ask us anything. / we answer everything.",
+    (19, "Sep 28", "Mon", "9:30 AM", "FAQs", "ask us anything. / we answer everything.",
      "Cream cards. The five questions that actually arrive on WhatsApp.",
      "Question box", "OFFERS"),
-    (20, "Sep 30", "Wed", "9:30 AM", "BOOK NOW", "october is open. / whatsapp us.",
+    (20, "Sep 29", "Tue", "9:30 AM", "BOOK NOW", "october is open. / whatsapp us.",
      "The WhatsApp thread on screen, name blurred, then the lake.",
      "Link / DM sticker", "OFFERS"),
 ]
@@ -616,7 +685,7 @@ print("sheet 3 done")
 
 # ==================================================================== SHEET 4
 s4 = new_sheet("Highlights", [7, 18, 14, 44, 26, 12, 12, 34],
-               "SEPTEMBER 2026  ·  HIGHLIGHTS  ·  built after the stories",
+               "SEPTEMBER 2026  ·  HIGHLIGHTS  ·  all seven built by Sep 30",
                "Tray order is left to right on the profile. Note the inversion: OFFERS sits "
                "FIRST in the tray but is built LAST, because it is the only highlight that "
                "expires. The other six are evergreen — built once and left alone.")
@@ -632,7 +701,7 @@ HL = [
      "an expired offer sitting at the front of the tray is worse than no offer highlight."),
     (2, "VILLA 🏡", "villa",
      "1 · Exterior  2 · Living room  3 · Bedrooms  4 · Pool  5 · Lake view  6 · Night view",
-     "Stories 1, 4, 14", "Sep 6", "No",
+     "Stories 1, 4, 14", "Sep 13", "No",
      "The 5–6 frame overview. This is the one a cold visitor opens first — it has to answer "
      "'what is this place' without a single word of sell."),
     (3, "EXPERIENCES ✨", "experiences",
@@ -643,7 +712,7 @@ HL = [
      "advertises one, which is exactly why it lands."),
     (4, "ROOMS 🛏️", "rooms",
      "All four bedrooms, then bathrooms, then the bathtub",
-     "Story 2", "Sep 6", "No",
+     "Story 2", "Sep 13", "No",
      "Vary the light between bedrooms so it does not read as one room shot four times. "
      "The bathtub is a booking driver — give it its own frame, not a corner of a bathroom shot."),
     (5, "POOL 🌊", "pool",
@@ -673,11 +742,14 @@ r = section(s4, r, "BUILD SEQUENCE — in date order", 8)
 head_row(s4, r, ["", "Date", "Build", "Why then", "", "", "", ""])
 r += 1
 SEQ = [
-    ("", "Sep 6", "THE VILLA · ROOMS", "Stories 1–2 ran Sep 4. Build the moment they are live — a story is only saveable for 24 hours.", "", "", "", ""),
-    ("", "Sep 13", "EXPERIENCES · POOL", "Stories 3–9 are all in by Sep 12. Ganpati eve is a quiet posting day, so it is free build time.", "", "", "", ""),
-    ("", "Sep 20", "KARJAT", "Stories 11–12 ran Sep 17–18. Quiet visarjan Sunday.", "", "", "", ""),
-    ("", "Sep 27", "GROUPS", "Stories 10, 13, 15, 16 are all in by Sep 25.", "", "", "", ""),
-    ("", "Sep 30", "OFFERS", "Built last so the prices and validity are current on the day the tray goes live. Needs the two price figures — see CONFIRM.", "", "", "", ""),
+    ("", "Sep 13", "VILLA · ROOMS · POOL · EXPERIENCES",
+     "Stories 1–10 all ran Sep 7–13. Ganpati eve is a quiet posting day, so it is free build time. Four highlights go up at once.", "", "", "", ""),
+    ("", "Sep 20", "KARJAT",
+     "Stories 11–12 ran Sep 17–18. Quiet visarjan Sunday.", "", "", "", ""),
+    ("", "Sep 27", "GROUPS",
+     "Stories 10, 13, 15, 16 are all in by Sep 23.", "", "", "", ""),
+    ("", "Sep 30", "OFFERS  +  SET TRAY ORDER",
+     "Built last so prices and validity are current on the day the tray goes live. Needs the two price figures — see CONFIRM. Set the tray order the same day.", "", "", "", ""),
 ]
 for q in SEQ:
     data_row(s4, r, list(q), height=32)
@@ -694,16 +766,16 @@ print("sheet 4 done")
 
 
 # ==================================================================== SHEET 5
-s5 = new_sheet("Captions", [6, 24, 10, 9, 62, 46, 22],
-               "SEPTEMBER 2026  ·  CAPTIONS  ·  all 11 feed pieces",
+s5 = new_sheet("Captions", [6, 24, 10, 9, 62, 46, 22, 40],
+               "SEPTEMBER 2026  ·  CAPTIONS  ·  all 11 feed pieces, Sep 7–30",
                "August voice throughout: lowercase, short lines, no exclamation marks, no "
                "emoji, no rupee figures, CTA always to WhatsApp. Line breaks are intentional — "
                "paste with them intact. Hashtags go in the caption, not a first comment: "
                "Instagram weights them identically and a first comment can be missed.")
-head_row(s5, 3, ["#", "Piece", "Date", "Time", "Caption", "Hashtags", "Notes"])
+head_row(s5, 3, ["#", "Piece", "Date", "Time", "Caption", "Hashtags", "Notes", "Inspo link"])
 
 CAPS = [
-    (1, "REEL 1 · All Of It", "Sep 1", "9:30 PM",
+    (1, "REEL 1 · All Of It", "Sep 7", "9:30 PM",
      "the whole house, in one go.\n\n"
      "four bedrooms. an infinity pool pointed at a lake.\n"
      "a cinema inside. a gym. a library nobody expects.\n\n"
@@ -714,7 +786,7 @@ CAPS = [
      "#lakeviewvilla #villawithprivatepool #infinitypool #weekendgetaway "
      "#mumbaiweekendgetaway #punegetaway #4bhkvilla #luxuryvillaindia #boutiquevilla",
      "Opens the month. Brand-first, offer mentioned once at the end."),
-    (2, "CAROUSEL 1 · What A Weekday Gets You", "Sep 2", "9:30 AM",
+    (2, "CAROUSEL 1 · What A Weekday Gets You", "Sep 9", "9:30 AM",
      "the pool, with nobody in it.\n\n"
      "that is the actual difference between a saturday here\n"
      "and a tuesday.\n\n"
@@ -727,7 +799,7 @@ CAPS = [
      "#bougainvilla #4bhkvilla #luxuryvilla #maharashtratourism",
      "The offer post. No rupee figure anywhere in the caption. The 'we don't publish rates' "
      "line is doing the conversion work — it makes the DM the only way to find out."),
-    (3, "STATIC 1 · The Lake Is The View", "Sep 3", "9:30 AM",
+    (3, "STATIC 1 · The Lake Is The View", "Sep 8", "9:30 AM",
      "the lake was here first.\n"
      "we just pointed the house at it.\n\n"
      "every room on that side looks at water.\n\n"
@@ -736,7 +808,7 @@ CAPS = [
      "#bougainvilla #weekendgetaway #mumbaiweekendgetaway #sahyadri #boutiquevilla "
      "#villawithaview",
      "Brand anchor. Short caption — the frame carries it."),
-    (4, "REEL 2 · The Pool, Day To Night", "Sep 7", "9:30 PM",
+    (4, "REEL 2 · The Pool, Day To Night", "Sep 10", "9:30 PM",
      "one pool. four times of day.\n\n"
      "morning, when it's still cold.\n"
      "six, when the lake goes orange.\n"
@@ -749,7 +821,7 @@ CAPS = [
      "#villainkarjat #poolvilla #weekendgetaway #mumbaiweekendgetaway #punegetaway "
      "#bougainvilla #luxuryvillaindia",
      "The fourth beat is the sell. Everything before it is setup."),
-    (5, "CAROUSEL 2 · Seven Things Inside", "Sep 9", "9:30 AM",
+    (5, "CAROUSEL 2 · Seven Things Inside", "Sep 11", "9:30 AM",
      "seven reasons the car stays parked.\n\n"
      "the infinity pool. the lake.\n"
      "the home theatre. the gym.\n"
@@ -840,10 +912,13 @@ CAPS = [
 ]
 r = 4
 for c in CAPS:
-    data_row(s5, r, list(c), height=150)
+    url = LINKS.get(c[1], "")
+    data_row(s5, r, list(c) + [url], height=150)
+    if url:
+        lc = s5.cell(row=r, column=8); lc.hyperlink = url; lc.font = f(9, color="1155CC")
     r += 1
 r += 1
-s5.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+s5.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
 data_row(s5, r, ["No caption this month contains a rupee figure, an exclamation mark, an emoji, "
                  "or the words 'limited', 'hurry' or 'book now before'. That is deliberate and "
                  "carried from the August rules — please keep it that way through review."],
@@ -860,11 +935,11 @@ s6 = new_sheet("Inspo Links", [8, 30, 10, 62, 44, 20],
                "exactly as supplied. Designer: open each one yourself before you start.")
 head_row(s6, 3, ["Ref", "Maps to piece", "Date", "Link", "What to take from it", "Reviewed?"])
 INSPO = [
-    ("Carousel 1", "CAROUSEL 1 · What A Weekday Gets You", "Sep 2",
+    ("Carousel 1", "CAROUSEL 1 · What A Weekday Gets You", "Sep 9",
      "https://www.instagram.com/p/DbsuoOVjPzV/",
      "Structure and slide pacing for the offer carousel. Client note carried from August: "
      "minimum 4 photos, WhatsApp on the very last slide.", "NOT REVIEWED"),
-    ("Carousel 2", "CAROUSEL 2 · Seven Things Inside", "Sep 9",
+    ("Carousel 2", "CAROUSEL 2 · Seven Things Inside", "Sep 11",
      "https://www.instagram.com/p/DcVqkH6CP9E/",
      "Reference for the numbered-list carousel format — seven items without it reading as a "
      "spec sheet.", "NOT REVIEWED"),
@@ -876,7 +951,7 @@ INSPO = [
      "https://www.instagram.com/p/DcX2SH-iByn/",
      "Reference for the audience/segment carousel — how to show three group types without "
      "captioning each one to death.", "NOT REVIEWED"),
-    ("Static 1", "STATIC 1 · The Lake Is The View", "Sep 3",
+    ("Static 1", "STATIC 1 · The Lake Is The View", "Sep 8",
      "https://www.instagram.com/p/DcQEepBDakg/?img_index=2",
      "Single-frame composition with heavy negative space. Note: the link points at image 2 of "
      "the set — that specific frame is the reference.", "NOT REVIEWED"),
@@ -888,10 +963,10 @@ INSPO = [
      "https://www.instagram.com/p/Dblrpj-E_Lf/?img_index=1&igsi=cWd0amt3MXdqZnAw",
      "Type reference. Pick ONE face from this. The one-typeface rule holds across all 11 "
      "pieces and all 7 highlight covers.", "NOT REVIEWED"),
-    ("Reel 1", "REEL 1 · All Of It", "Sep 1",
+    ("Reel 1", "REEL 1 · All Of It", "Sep 7",
      "https://www.instagram.com/p/DadUztOMe56/",
      "Pacing reference for the full-villa walkthrough.", "NOT REVIEWED"),
-    ("Reel 2", "REEL 2 · The Pool, Day To Night", "Sep 7",
+    ("Reel 2", "REEL 2 · The Pool, Day To Night", "Sep 10",
      "https://www.instagram.com/p/DceNoWbyQnA/",
      "Time-of-day progression cut.", "NOT REVIEWED"),
     ("Reel 3", "REEL 3 · After The City", "Sep 21",
@@ -909,22 +984,27 @@ r = 4
 for i in INSPO:
     data_row(s6, r, list(i), height=44)
     s6.cell(row=r, column=6).font = f(9, bold=True, color=TERRACOTTA)
+    lc = s6.cell(row=r, column=4); lc.hyperlink = i[3]; lc.font = f(9, color="1155CC")
     r += 1
+r += 1
+s6.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+data_row(s6, r, ["Account: " + ACCOUNT + "     August 2026 calendar: " + AUGUST_CC],
+         height=26, bg=FILL_SUBHEAD)
 s6.freeze_panes = "A4"
 print("sheet 6 done")
 
 
 # ==================================================================== SHEET 7
 s7 = new_sheet("Production Tracker",
-               [5, 34, 11, 10, 9, 13, 13, 13, 13, 15, 13, 17, 30],
-               "SEPTEMBER 2026  ·  PRODUCTION TRACKER",
+               [5, 34, 11, 10, 9, 13, 13, 13, 13, 15, 13, 17, 30, 40],
+               "SEPTEMBER 2026  ·  PRODUCTION TRACKER  ·  posts Sep 7–30",
                "Columns match the 'Bougain Villa Content machine' sheet so this drops straight "
                "in. Status cells take one of: Not started / In progress / Done. The summary "
                "below counts them live — change a status and the counts update.")
 r = 3
-r = section(s7, r, "STATUS SUMMARY — live counts", 13)
+r = section(s7, r, "STATUS SUMMARY — live counts", 14)
 head_row(s7, r, ["", "Stage", "Not started", "In progress", "Done", "Total items",
-                 "", "", "", "", "", "", ""])
+                 "", "", "", "", "", "", "", ""])
 summary_head = r
 r += 1
 
@@ -934,18 +1014,19 @@ summary_first = r
 r += len(summary_rows)
 r += 1
 
-r = section(s7, r, "TRACKER", 13)
+r = section(s7, r, "TRACKER", 14)
 head_row(s7, r, ["#", "Item", "Type", "Post date", "Time", "Owner", "Shoot", "Design",
-                 "Caption", "Deliverable sent", "Scheduled", "Revision review", "Comment"])
+                 "Caption", "Deliverable sent", "Scheduled", "Revision review", "Comment",
+                 "Inspo link"])
 r += 1
 DATA_FIRST = r
 
 FEED = [
-    ("REEL 1 · All Of It", "Reel", "Sep 1", "9:30 PM"),
-    ("CAROUSEL 1 · What A Weekday Gets You", "Carousel", "Sep 2", "9:30 AM"),
-    ("STATIC 1 · The Lake Is The View", "Static", "Sep 3", "9:30 AM"),
-    ("REEL 2 · The Pool, Day To Night", "Reel", "Sep 7", "9:30 PM"),
-    ("CAROUSEL 2 · Seven Things Inside", "Carousel", "Sep 9", "9:30 AM"),
+    ("REEL 1 · All Of It", "Reel", "Sep 7", "9:30 PM"),
+    ("CAROUSEL 1 · What A Weekday Gets You", "Carousel", "Sep 9", "9:30 AM"),
+    ("STATIC 1 · The Lake Is The View", "Static", "Sep 8", "9:30 AM"),
+    ("REEL 2 · The Pool, Day To Night", "Reel", "Sep 10", "9:30 PM"),
+    ("CAROUSEL 2 · Seven Things Inside", "Carousel", "Sep 11", "9:30 AM"),
     ("STATIC 2 · Ganpati Greeting", "Static", "Sep 14", "9:00 AM"),
     ("CAROUSEL 3 · A Guide To Karjat", "Carousel", "Sep 16", "9:30 AM"),
     ("REEL 3 · After The City", "Reel", "Sep 21", "9:30 PM"),
@@ -969,11 +1050,14 @@ NOTES = {
 
 n = 1
 for label, kind, date, tm in FEED + STORY_ROWS + HL_ROWS:
+    url = LINKS.get(label, "")
     data_row(s7, r, [n, label, kind, date, tm, "[assign]", "Not started", "Not started",
-                     "Not started", "", "Not started", "", NOTES.get(label, "")],
+                     "Not started", "", "Not started", "", NOTES.get(label, ""), url],
              height=18)
     if label in NOTES:
         s7.cell(row=r, column=13).font = f(9, bold=True, color=TERRACOTTA)
+    if url:
+        lc = s7.cell(row=r, column=14); lc.hyperlink = url; lc.font = f(9, color="1155CC")
     r += 1
     n += 1
 DATA_LAST = r - 1
@@ -986,18 +1070,18 @@ for i, (stage, col) in enumerate(summary_rows):
                       f'=COUNTIF({rng},"Not started")',
                       f'=COUNTIF({rng},"In progress")',
                       f'=COUNTIF({rng},"Done")',
-                      f'=COUNTA({rng})', "", "", "", "", "", "", ""], height=18)
+                      f'=COUNTA({rng})', "", "", "", "", "", "", "", ""], height=18)
     for c in range(3, 7):
         s7.cell(row=rr, column=c).alignment = align("center", "center")
 
 r = DATA_LAST + 2
-s7.merge_cells(start_row=r, start_column=1, end_row=r, end_column=13)
+s7.merge_cells(start_row=r, start_column=1, end_row=r, end_column=14)
 data_row(s7, r, ["LEGEND — edit only the Owner, Shoot, Design, Caption, Deliverable sent, "
                  "Scheduled, Revision review and Comment columns. Status cells take exactly "
                  "'Not started', 'In progress' or 'Done' — any other spelling will not be "
                  "counted by the summary above."], height=30, bg=FILL_SUBHEAD)
 r += 1
-s7.merge_cells(start_row=r, start_column=1, end_row=r, end_column=13)
+s7.merge_cells(start_row=r, start_column=1, end_row=r, end_column=14)
 data_row(s7, r, ["EXAMPLE OF EXPECTED FORMAT — delete this row before use: "
                  "1 | REEL 1 · All Of It | Reel | Sep 1 | 9:30 PM | Hardik | Done | "
                  "In progress | Done | 28 Aug | Not started | v2 sent, awaiting sign-off | "

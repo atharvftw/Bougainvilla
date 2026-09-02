@@ -1,6 +1,8 @@
 # SEPTEMBER 2026 · BOUGAINVILLA RESORTS · CONTENT CALENDAR — PLAN
 
-Status: PLAN ONLY. Nothing built yet. Awaiting approval.
+Status: BUILT. Workbook at deliverables/September-2026-Content-Calendar.xlsx
+REVISED: the calendar now runs Mon 7 Sep -> Wed 30 Sep. Sep 1-6 is production
+time only, nothing publishes. Everything finishes inside September.
 Source of truth: August-2026-Content-Calendar (Drive), Sheet 1 (calendar) + Sheet 2 (Designer Brief).
 Working sheet: "Bougain Villa Content machine" — September rows, story ideas, highlight brief.
 
@@ -14,9 +16,10 @@ hardest-working creative in the weakest window.
 
 | Window | Dates | Demand | What the content does |
 |---|---|---|---|
-| A · Monsoon tail, pre-Ganpati | Sep 1–13 | HIGHEST of the month | Convert. Offer carousel, lake-view hero, villa tour. |
-| B · Ganpati fortnight | Sep 14–24 | Attention high, villa bookings LOW | Brand + saves. No offer. Mumbai/Pune households stay home. |
-| C · Pitru Paksha | Sep 25–30 | LOWEST | Build the asset. Highlights, utility stories, pre-sell October. |
+| 0 · Production | Sep 1-6 | — | Nothing publishes. Shoot and cut all of week 1. |
+| A · Pre-Ganpati | Sep 7-13 | HIGHEST — and the ONLY selling week | Convert. 5 of the 11 feed pieces land here. |
+| B · Ganpati fortnight | Sep 14-24 | Attention high, villa bookings LOW | Brand + saves. No offer. |
+| C · Pitru Paksha | Sep 25-30 | LOWEST | Build the asset, pre-sell October. |
 
 This mirrors the August logic exactly — August already called Dahi Handi
 "City festival — Mumbai and Thane crowds stay in town. Not a villa weekend."
@@ -80,137 +83,118 @@ New for September:
 
 ---
 
-## 4 · THE CALENDAR
+## 4 · THE CALENDAR — Sep 7 to Sep 30
 
-Sep 1 2026 is a Tuesday. Week 1 has no Monday.
-Cadence inherited from August: Reels Mon 9:30 PM · Carousels + Statics Wed/Thu
-9:30 AM · Stories 9:30 AM or 9:30 PM · never 12–4 PM.
+Sep 1 2026 is a Tuesday. The month posts Mon 7 Sep through Wed 30 Sep.
+Cadence inherited from August: Reels 9:30 PM · Carousels + Statics 9:30 AM ·
+Stories 9:30 AM or 9:30 PM · never 12–4 PM.
 
-11 feed pieces — 5 reels, 4 carousels, 2 statics — plus 20 stories.
+11 feed pieces — 5 reels, 4 carousels, 2 statics — plus 20 stories, plus all
+7 highlights built and the tray ordered, all inside September.
 
-### WEEK 1 · Sep 1–6 · CONVERSION WINDOW
-| Date | Slot | Piece | Inspo |
-|---|---|---|---|
-| Tue 1 · 9:30 PM | REEL 1 | **ALL OF IT** — 30-second villa tour. Opens the month, sets the asset list. | reel 1 |
-| Wed 2 · 9:30 AM | CAROUSEL 1 | **WHAT A WEEKDAY GETS YOU** — the offer carousel, moved to the front of the month. | Carousel 1 |
-| Thu 3 · 9:30 AM | STATIC 1 | **THE LAKE IS THE VIEW** — lake-facing hero. The asset August never used. | Static 1 |
-| Fri 4 · 9:30 AM | STORY 1 · 2 | VILLA · ROOMS → seeds THE VILLA + ROOMS | — |
-| Sat 5 · 9:30 PM | STORY 3 | POOL → seeds POOL | — |
-| Sun 6 | — | Build highlights: THE VILLA, ROOMS | — |
+### PRODUCTION WEEK · Sep 1–6 · nothing publishes
+Shoot and cut Reel 1, Static 1, Carousel 1, Reel 2, Carousel 2 and Stories 1–10.
+Designer gets Carousel 1 and Static 1 by Sep 5. Approvals close Sep 6.
 
-### WEEK 2 · Sep 7–13 · DEPTH + SAVES (last full booking week)
-| Date | Slot | Piece | Inspo |
-|---|---|---|---|
-| Mon 7 · 9:30 PM | REEL 2 | **THE POOL, DAY TO NIGHT** — day → sunset → night → lake. | reel 2 |
-| Tue 8 · 9:30 AM | STORY 4 · 5 | LAKE VIEW · AMENITIES | — |
-| Wed 9 · 9:30 AM | CAROUSEL 2 | **SEVEN THINGS INSIDE** — pool, lake, theatre, gym, games, library, garden. Sells the experience, not the amenity list. | Carousel 2 |
-| Thu 10 · 9:30 AM | STORY 6 · 7 | GAMES · THEATRE → seeds EXPERIENCES | — |
-| Fri 11 · 9:30 PM | STORY 8 · 9 | KITCHEN · OUTDOOR | — |
-| Sat 12 · 9:30 AM | STORY 10 | CAPACITY (poll) → seeds GROUPS | — |
-| Sun 13 | — | Quiet. Ganpati eve — households are decorating. Build EXPERIENCES + POOL highlights. | — |
+### WEEK 1 · Sep 7–13 · THE ONLY SELLING WEEK
+| Date | Piece | Story |
+|---|---|---|
+| Mon 7 | REEL 1 · 9:30 PM — **All Of It**, full villa tour | Story 1 VILLA |
+| Tue 8 | STATIC 1 · 9:30 AM — **The Lake Is The View** | Story 2 ROOMS |
+| Wed 9 | CAROUSEL 1 · 9:30 AM — **What A Weekday Gets You** (the offer) | Story 3 POOL |
+| Thu 10 | REEL 2 · 9:30 PM — **The Pool, Day To Night** | Story 4 LAKE VIEW |
+| Fri 11 | CAROUSEL 2 · 9:30 AM — **Seven Things Inside** | Stories 5–6 |
+| Sat 12 | — | Stories 7–8 |
+| Sun 13 | Ganpati eve, quiet | Stories 9–10 · **BUILD VILLA · ROOMS · POOL · EXPERIENCES** |
 
-### WEEK 3 · Sep 14–20 · GANPATI · brand + saves only, zero offer
-| Date | Slot | Piece | Inspo |
-|---|---|---|---|
-| Mon 14 · 9:00 AM | STATIC 2 | **GANPATI GREETING** — greeting only. No offer, no CTA, no clip-art. | Static 2 |
-| Tue 15 | — | Silent. | — |
-| Wed 16 · 9:30 AM | CAROUSEL 3 | **A GUIDE TO KARJAT** — scenery, nearby, the drive, escape-the-city. Built for SAVES; saves compound in a high-attention week. | Carousel 3 |
-| Thu 17 · 9:30 AM | STORY 11 | LOCATION (map sticker) → seeds KARJAT | — |
-| Fri 18 · 9:30 PM | STORY 12 | HOW TO REACH — Mumbai + Pune routes → KARJAT | — |
-| Sat 19 · 9:30 AM | STORY 13 | PET FRIENDLY (question box) | — |
-| Sun 20 | — | Quiet. Gauri/visarjan for many households. Build KARJAT highlight. | — |
+Five of the month's eleven feed pieces sit in these seven days. That is the
+whole conversion budget for September — nothing in this week can slip.
 
-### WEEK 4 · Sep 21–27 · POST-VISARJAN RE-ENTRY
-| Date | Slot | Piece | Inspo |
-|---|---|---|---|
-| Mon 21 · 9:30 PM | REEL 3 | **AFTER THE CITY** — groups, friends, celebrations. The re-entry reel. | reel 3 |
-| Tue 22 · 9:30 AM | STORY 14 · 15 | STAY · CELEBRATIONS → seeds GROUPS | — |
-| Wed 23 · 9:30 AM | CAROUSEL 4 | **WHO IT'S FOR** — friends, families, celebrations, capacity, private villa. | Carousel 4 |
-| Thu 24 | — | ANANT CHATURDASHI · visarjan. Silent. | — |
-| Fri 25 · 9:30 PM | STORY 16 | REVIEWS | — |
-| Sat 26 · 9:30 AM | STORY 17 | CHECK-IN | — |
-| Sun 27 | — | Quiet. Build GROUPS highlight. | — |
+### WEEK 2 · Sep 14–20 · GANPATI · zero offer
+| Date | Piece | Story |
+|---|---|---|
+| Mon 14 | STATIC 2 · 9:00 AM — **Ganpati greeting**, no offer, no CTA | — |
+| Tue 15 | Silent | — |
+| Wed 16 | CAROUSEL 3 · 9:30 AM — **A Guide To Karjat**, built for saves | — |
+| Thu 17 | — | Story 11 LOCATION |
+| Fri 18 | — | Story 12 HOW TO REACH |
+| Sat 19 | — | Story 13 PET FRIENDLY |
+| Sun 20 | Quiet | **BUILD KARJAT** |
 
-### WEEK 5 · Sep 28–30 · PITRU PAKSHA · build the asset, pre-sell October
-| Date | Slot | Piece | Inspo |
-|---|---|---|---|
-| Mon 28 · 9:30 PM | REEL 4 | **OCTOBER IS CLEAR** — post-monsoon, the green without the rain. Pre-sells Navratri and Diwali. No September offer. | reel 4 |
-| Tue 29 · 9:30 AM | STORY 18 · 19 | RULES · FAQs | — |
-| Wed 30 · 9:30 AM | STORY 20 | BOOK NOW → seeds OFFERS | — |
-| Wed 30 · 9:30 PM | REEL 5 | **BOOK NOW** — closes the month on conversion, pointed at October. | 5th reel link |
+### WEEK 3 · Sep 21–27 · POST-VISARJAN RE-ENTRY
+| Date | Piece | Story |
+|---|---|---|
+| Mon 21 | REEL 3 · 9:30 PM — **After The City** | Story 14 STAY |
+| Tue 22 | — | Story 15 CELEBRATIONS |
+| Wed 23 | CAROUSEL 4 · 9:30 AM — **Who It's For** | Story 16 REVIEWS |
+| Thu 24 | Anant Chaturdashi · visarjan — silent | — |
+| Fri 25 | — | Story 17 CHECK-IN |
+| Sat 26 | Pitru Paksha begins | Story 18 RULES |
+| Sun 27 | Quiet | **BUILD GROUPS** |
+
+### WEEK 4 · Sep 28–30 · CLOSE
+| Date | Piece | Story |
+|---|---|---|
+| Mon 28 | REEL 4 · 9:30 PM — **October Is Clear** | Story 19 FAQs |
+| Tue 29 | — | Story 20 BOOK NOW |
+| Wed 30 | REEL 5 · 9:30 PM — **Book Now** | **BUILD OFFERS · SET TRAY ORDER** |
 
 ### RESERVED — 4 REACTIVE STORY SLOTS (do not pre-schedule)
-Carried from August, updated:
-1. Last heavy rain of the season, live.
-2. The villa is empty tonight — only post when it is.
-3. Snooker table / turf progress — when something actually changes on site.
-   *(Your working sheet changed Aug Story 7 from THE TURF to THE SNOOKER TABLE —
-   flag: is the turf still happening?)*
-4. A real WhatsApp inquiry, name blurred.
+Last heavy rain of the season · the villa is empty tonight · snooker table or
+turf progress · a real WhatsApp inquiry with the name blurred.
 
 ---
 
 ## 5 · THE 20 STORIES
 
-All 20 of your story ideas are used, in this order, each mapped to the highlight
-it feeds. Stories are the raw material — highlights are assembled from them,
-which is why highlight build dates all sit *after* the stories that fill them.
+All 20 run between Sep 7 and Sep 29, front-loaded so every highlight can be
+built inside the month.
 
-| # | Story | Date | Sticker / CTA | → Highlight |
-|---|---|---|---|---|
-| 1 | VILLA — quick overall tour | Sep 4 | — | VILLA |
-| 2 | ROOMS — all 4 bedrooms | Sep 4 | — | ROOMS |
-| 3 | POOL — infinity pool, day/night | Sep 5 | — | POOL |
-| 4 | LAKE VIEW | Sep 8 | — | VILLA, POOL, KARJAT |
-| 5 | AMENITIES — gym, theatre, library, games | Sep 8 | — | EXPERIENCES |
-| 6 | GAMES — snooker, TT, carrom | Sep 10 | Poll | EXPERIENCES |
-| 7 | THEATRE | Sep 10 | — | EXPERIENCES |
-| 8 | KITCHEN — open kitchen, what's provided | Sep 11 | — | EXPERIENCES |
-| 9 | OUTDOOR — garden, poolside | Sep 11 | — | EXPERIENCES |
-| 10 | CAPACITY — 4BHK, baths, group suitability | Sep 12 | Poll | GROUPS |
-| 11 | LOCATION — Karjat + Maps | Sep 17 | Location sticker | KARJAT |
-| 12 | HOW TO REACH — Mumbai/Pune routes | Sep 18 | Question box | KARJAT |
-| 13 | PET FRIENDLY — policy + spaces | Sep 19 | Question box | GROUPS |
-| 14 | STAY — what to expect | Sep 22 | — | VILLA |
-| 15 | CELEBRATIONS — birthdays, anniversaries | Sep 22 | — | GROUPS |
-| 16 | REVIEWS — guest feedback | Sep 25 | — | GROUPS |
-| 17 | CHECK-IN — process + timings | Sep 26 | — | OFFERS |
-| 18 | RULES — house, noise, pool, pets | Sep 29 | — | OFFERS |
-| 19 | FAQs | Sep 29 | Question box | OFFERS |
-| 20 | BOOK NOW — WhatsApp/call/Instagram | Sep 30 | Link/DM | OFFERS |
-
----
-
-## 6 · HIGHLIGHTS — BUILT AFTER THE STORIES, IN YOUR ORDER
-
-Tray order left-to-right on the profile, exactly as you numbered them:
-
-**OFFERS · VILLA · EXPERIENCES · ROOMS · POOL · GROUPS · KARJAT**
-
-Note the deliberate inversion: OFFERS sits **first** in the tray but is **built
-last**, because it is the only highlight that expires. Everything else is
-evergreen and gets built the moment its stories are live.
-
-| # | Highlight | Frames | Fed by | Build date |
-|---|---|---|---|---|
-| 1 | **OFFERS** 🎁 | 5 purpose-made frames: Mon–Thu offer · regular → weekday price · what's included · validity · CTA "DM / WhatsApp for available dates" | Purpose-shot + Stories 17–20 | **Sep 30** |
-| 2 | **VILLA** 🏡 | 6: exterior · living room · bedrooms · pool · lake view · night view | Stories 1, 4, 14 | Sep 6 |
-| 3 | **EXPERIENCES** ✨ | 7: infinity pool · lake view · home theatre · gym · snooker/TT/carrom · library · garden | Stories 5, 6, 7, 8, 9 | Sep 13 |
-| 4 | **ROOMS** 🛏️ | All 4 bedrooms + bathrooms + bathtub | Story 2 | Sep 6 |
-| 5 | **POOL** 🌊 | Day → sunset → night → lake view | Stories 3, 4 | Sep 13 |
-| 6 | **GROUPS** 👥 | Friends · families · celebrations · max capacity · private villa | Stories 10, 13, 15, 16 | Sep 27 |
-| 7 | **KARJAT** 🌿 | Scenery · nearby attractions · drive/route · escape the city | Stories 11, 12 | Sep 20 |
-
-**OFFERS is the only highlight carrying prices**, and it is the only one that
-must be rebuilt every month when the offer or validity changes. The other six
-are built once and left alone.
-
-Highlight cover spec goes in the Designer Brief: cream `#F2EBE1` ground, brand
-brown `#6B4F3A` lowercase label, one botanical mark, no emoji on the cover
-itself (the emoji above are for your reference in the sheet only — the August
-"no emoji or stickers" rule holds on the artwork).
+| # | Story | Date | → Highlight |
+|---|---|---|---|
+| 1 | VILLA | Sep 7 | VILLA |
+| 2 | ROOMS | Sep 8 | ROOMS |
+| 3 | POOL | Sep 9 | POOL |
+| 4 | LAKE VIEW | Sep 10 | VILLA · POOL · KARJAT |
+| 5 | AMENITIES | Sep 11 | EXPERIENCES |
+| 6 | GAMES | Sep 11 | EXPERIENCES |
+| 7 | THEATRE | Sep 12 | EXPERIENCES |
+| 8 | KITCHEN | Sep 12 | EXPERIENCES |
+| 9 | OUTDOOR | Sep 13 | EXPERIENCES |
+| 10 | CAPACITY | Sep 13 | GROUPS |
+| 11 | LOCATION | Sep 17 | KARJAT |
+| 12 | HOW TO REACH | Sep 18 | KARJAT |
+| 13 | PET FRIENDLY | Sep 19 | GROUPS |
+| 14 | STAY | Sep 21 | VILLA |
+| 15 | CELEBRATIONS | Sep 22 | GROUPS |
+| 16 | REVIEWS | Sep 23 | GROUPS |
+| 17 | CHECK-IN | Sep 25 | OFFERS |
+| 18 | RULES | Sep 26 | OFFERS |
+| 19 | FAQs | Sep 28 | OFFERS |
+| 20 | BOOK NOW | Sep 29 | OFFERS |
 
 ---
+
+## 6 · HIGHLIGHTS — ALL SEVEN BUILT BY SEP 30
+
+Tray order, left to right: **OFFERS · VILLA · EXPERIENCES · ROOMS · POOL ·
+GROUPS · KARJAT** — exactly your numbering.
+
+OFFERS sits first in the tray but is built last, because it is the only
+highlight that expires.
+
+| Build date | Highlights |
+|---|---|
+| Sep 13 | VILLA · ROOMS · POOL · EXPERIENCES |
+| Sep 20 | KARJAT |
+| Sep 27 | GROUPS |
+| Sep 30 | OFFERS, then set the tray order |
+
+Instagram orders the tray by most-recently-updated, so on Sep 30 add one frame
+to each highlight in **reverse** order — karjat first, offers last.
+
+OFFERS is the only highlight carrying prices, and the only one that needs
+rebuilding when the offer or validity changes.
 
 ## 7 · CAPTIONS
 
