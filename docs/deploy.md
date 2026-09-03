@@ -8,24 +8,16 @@ Vercel. They meet at one shared secret.
 ## 1 · n8n
 
 n8n must be reachable at a **public HTTPS URL** — Meta will not deliver webhooks
-to `localhost`, plain HTTP, or a self-signed certificate. n8n Cloud, Railway,
-Render, or your own box behind Caddy/nginx all work.
-
-Set on the instance before importing:
-
-```bash
-NODE_FUNCTION_ALLOW_BUILTIN=crypto
-WEBHOOK_URL=https://n8n.yourdomain.com
-N8N_ENCRYPTION_KEY=<random>
-```
-
-Then:
+to `localhost`, plain HTTP, or a self-signed certificate.
 
 1. **Workflows → Import from File** → `n8n/bougainvilla-crm.workflow.json`
-2. Add the env vars from [n8n-credentials.md](n8n-credentials.md)
-3. Open **Sarvam AI Chat Model** and attach the OpenAI-compatible credential
-   (it imports with a `REPLACE_ME` placeholder)
-4. **Activate** the workflow — production webhook URLs only exist while active
+2. Configure it entirely through the UI — credentials, three Code-node values,
+   one node parameter: **[n8n-config.md](n8n-config.md)**
+3. **Activate** the workflow — production webhook URLs only exist while active
+
+No environment variables and no server access are required. If you *do* control
+the host, `WEBHOOK_URL=https://your-n8n` is still worth setting so n8n prints
+correct webhook URLs in the editor.
 
 ### Endpoints this creates
 

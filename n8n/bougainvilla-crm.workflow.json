@@ -19,7 +19,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Meta calls every callback URL once with GET to verify ownership.\n// Constant-time compare so the token can't be recovered by timing the response.\nconst c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst q = $json.query || {};\nconst expected = $env.META_VERIFY_TOKEN || '';\nconst token = String(q['hub.verify_token'] || '');\n\nlet ok = false;\nif (expected && q['hub.mode'] === 'subscribe' && token.length === expected.length) {\n  ok = c.timingSafeEqual(Buffer.from(token), Buffer.from(expected));\n}\n\nreturn [{ json: { verified: ok, challenge: ok ? String(q['hub.challenge'] || '') : '' } }];"
+        "jsCode": "// ─── PASTE YOUR VERIFY TOKEN HERE ────────────────────────────────────\n//     The same string you type into Meta's \"Verify token\" box.\nconst META_VERIFY_TOKEN = '';\n// ─────────────────────────────────────────────────────────────────────\n//\n// Meta calls every callback URL once with GET to verify ownership.\n\nconst q = $json.query || {};\nconst token = String(q['hub.verify_token'] || '');\n\nlet diff = token.length ^ META_VERIFY_TOKEN.length;\nfor (let i = 0; i < token.length && i < META_VERIFY_TOKEN.length; i++) {\n  diff |= token.charCodeAt(i) ^ META_VERIFY_TOKEN.charCodeAt(i);\n}\nconst ok = Boolean(META_VERIFY_TOKEN) && q['hub.mode'] === 'subscribe' && diff === 0;\n\nreturn [{ json: { verified: ok, challenge: ok ? String(q['hub.challenge'] || '') : '' } }];"
       },
       "id": "ce1143ad-3382-47c3-825c-8ff74832c4ff",
       "name": "Check Meta Verify Token",
@@ -115,7 +115,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst secret = $env.META_APP_SECRET || '';\nif (!secret) throw new Error('META_APP_SECRET is not set - refusing to process an unverified Meta webhook');\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hub-signature-256'] || '');\n\nconst b64 = item.binary && item.binary.data && item.binary.data.data;\nif (!b64) throw new Error('Raw body missing - enable the \"Raw Body\" option on the webhook node');\nconst raw = Buffer.from(b64, 'base64');\n\nconst expected = 'sha256=' + c.createHmac('sha256', secret).update(raw).digest('hex');\nconst a = Buffer.from(signature);\nconst b = Buffer.from(expected);\nif (a.length !== b.length || !c.timingSafeEqual(a, b)) {\n  throw new Error('Invalid X-Hub-Signature-256 - rejecting webhook');\n}\n\nreturn [{ json: { headers, body: JSON.parse(raw.toString('utf8')) } }];"
+        "jsCode": "// ─── PASTE YOUR APP SECRET HERE ──────────────────────────────────────\n//     Meta app → App settings → Basic → App Secret\nconst META_APP_SECRET = '';\n// ─────────────────────────────────────────────────────────────────────\n//\n// Meta signs every webhook POST with HMAC-SHA256 over the RAW body.\n// Uses WebCrypto (built into Node 18+), so this needs no server config -\n// no NODE_FUNCTION_ALLOW_BUILTIN, no require().\n\nif (!META_APP_SECRET) throw new Error('META_APP_SECRET is empty - refusing to process an unverified Meta webhook');\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hub-signature-256'] || '');\n\nconst b64 = item.binary && item.binary.data && item.binary.data.data;\nif (!b64) throw new Error('Raw body missing - enable the \"Raw Body\" option on the webhook node');\nconst raw = Buffer.from(b64, 'base64');\n\nconst key = await crypto.subtle.importKey(\n  'raw', new TextEncoder().encode(META_APP_SECRET),\n  { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);\nconst sigBytes = await crypto.subtle.sign('HMAC', key, raw);\nconst expected = 'sha256=' + [...new Uint8Array(sigBytes)]\n  .map(b => b.toString(16).padStart(2, '0')).join('');\n\n// constant-time compare, pure JS\nlet diff = signature.length ^ expected.length;\nfor (let i = 0; i < signature.length && i < expected.length; i++) {\n  diff |= signature.charCodeAt(i) ^ expected.charCodeAt(i);\n}\nif (diff !== 0) throw new Error('Invalid X-Hub-Signature-256 - rejecting webhook');\n\nreturn [{ json: { headers, body: JSON.parse(raw.toString('utf8')) } }];"
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b011",
       "name": "Verify Instagram Signature",
@@ -217,17 +217,7 @@
       "parameters": {
         "toolDescription": "Check live availability and price before promising anything.",
         "method": "POST",
-        "url": "={{ $env.PMS_AVAILABILITY_URL || 'https://example.invalid/pms/availability' }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "valueProvider": "fieldValue",
-              "value": "={{ 'Bearer ' + ($env.PMS_API_KEY || '') }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/pms/availability",
         "sendBody": true,
         "specifyBody": "model",
         "placeholderDefinitions": {
@@ -255,7 +245,9 @@
           ]
         },
         "optimizeResponse": true,
-        "dataField": "data"
+        "dataField": "data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "2af5ace0-9a3c-4fba-9e2c-2d64a2c631d7",
       "name": "Tool - Check Availability",
@@ -264,23 +256,19 @@
       "position": [
         1376,
         416
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_PMS",
+          "name": "PMS API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "toolDescription": "Search matching properties by dates, guests, budget and preferences.",
         "method": "POST",
-        "url": "={{ $env.PMS_PROPERTY_SEARCH_URL || 'https://example.invalid/pms/properties/search' }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "valueProvider": "fieldValue",
-              "value": "={{ 'Bearer ' + ($env.PMS_API_KEY || '') }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/pms/properties/search",
         "sendBody": true,
         "specifyBody": "model",
         "placeholderDefinitions": {
@@ -313,7 +301,9 @@
           ]
         },
         "optimizeResponse": true,
-        "dataField": "data"
+        "dataField": "data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "9a9452a7-f3c1-4e8f-9556-3351478a1ec4",
       "name": "Tool - Property Search",
@@ -322,23 +312,19 @@
       "position": [
         1504,
         416
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_PMS",
+          "name": "PMS API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "toolDescription": "Create a reservation only after explicit guest confirmation and complete details.",
         "method": "POST",
-        "url": "={{ $env.PMS_BOOKING_URL || 'https://example.invalid/pms/bookings' }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "valueProvider": "fieldValue",
-              "value": "={{ 'Bearer ' + ($env.PMS_API_KEY || '') }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/pms/bookings",
         "sendBody": true,
         "specifyBody": "model",
         "placeholderDefinitions": {
@@ -381,7 +367,9 @@
           ]
         },
         "optimizeResponse": true,
-        "dataField": "data"
+        "dataField": "data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "025fa7c7-b255-4f6a-b447-cbe2375a81f1",
       "name": "Tool - Create Booking",
@@ -390,23 +378,19 @@
       "position": [
         1632,
         416
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_PMS",
+          "name": "PMS API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "toolDescription": "Create/update the CRM lead and booking stage.",
         "method": "POST",
-        "url": "={{ $env.CRM_LEAD_URL || 'https://example.invalid/crm/leads' }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "valueProvider": "fieldValue",
-              "value": "={{ 'Bearer ' + ($env.CRM_API_KEY || '') }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/crm/leads",
         "sendBody": true,
         "specifyBody": "model",
         "placeholderDefinitions": {
@@ -439,7 +423,9 @@
           ]
         },
         "optimizeResponse": true,
-        "dataField": "data"
+        "dataField": "data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "dd305d34-b4a8-4906-a879-65893cf4df68",
       "name": "Tool - Create CRM Lead",
@@ -448,23 +434,19 @@
       "position": [
         1824,
         416
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_CRM",
+          "name": "CRM API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "toolDescription": "Create an operational support ticket for issues needing staff.",
         "method": "POST",
-        "url": "={{ $env.SUPPORT_TICKET_URL || 'https://example.invalid/support/tickets' }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "valueProvider": "fieldValue",
-              "value": "={{ 'Bearer ' + ($env.SUPPORT_API_KEY || '') }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/support/tickets",
         "sendBody": true,
         "specifyBody": "model",
         "placeholderDefinitions": {
@@ -492,7 +474,9 @@
           ]
         },
         "optimizeResponse": true,
-        "dataField": "data"
+        "dataField": "data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "ed2cff3c-3de5-4e57-9742-1417cd36f619",
       "name": "Tool - Create Support Ticket",
@@ -501,23 +485,19 @@
       "position": [
         1952,
         416
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_SUPPORT",
+          "name": "Support API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "toolDescription": "Escalate to a human host/manager for refunds, emergencies, exceptions or uncertainty.",
         "method": "POST",
-        "url": "={{ $env.HUMAN_HANDOFF_URL || 'https://example.invalid/handoff' }}",
-        "sendHeaders": true,
-        "parametersHeaders": {
-          "values": [
-            {
-              "name": "Authorization",
-              "valueProvider": "fieldValue",
-              "value": "={{ 'Bearer ' + ($env.SUPPORT_API_KEY || '') }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/handoff",
         "sendBody": true,
         "specifyBody": "model",
         "placeholderDefinitions": {
@@ -545,7 +525,9 @@
           ]
         },
         "optimizeResponse": true,
-        "dataField": "data"
+        "dataField": "data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "be99e6ff-e744-4b1c-b9f0-6566271e70ad",
       "name": "Tool - Human Handoff",
@@ -554,7 +536,13 @@
       "position": [
         2160,
         400
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_SUPPORT",
+          "name": "Support API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -572,21 +560,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.CRM_LEAD_URL || 'https://example.invalid/crm/leads' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.CRM_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/crm/leads",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({channel:$json.channel,guest_id:$json.senderId,message:$json.text||'',intent:$json.intent,lead_stage:$json.lead_stage,booking_status:$json.booking_status,property_id:$json.property_id||'',booking_id:$json.booking_id||''}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "045cc0f4-ae99-48f9-8407-800955c97da7",
       "name": "Log AI Lead Decision",
@@ -595,19 +576,21 @@
       "position": [
         2448,
         192
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_CRM",
+          "name": "CRM API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ 'https://graph.instagram.com/v23.0/' + ($env.INSTAGRAM_BUSINESS_ID || $json.recipientId || '') + '/messages' }}",
+        "url": "=https://graph.instagram.com/v23.0/{{ $json.recipientId || 'PASTE_INSTAGRAM_BUSINESS_ID' }}/messages",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}"
-            },
             {
               "name": "Content-Type",
               "value": "application/json"
@@ -618,7 +601,9 @@
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({recipient:{id:$json.senderId},message:{text:$json.reply}}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "22e9340f-1225-4b9d-97c9-bd52d6dff566",
       "name": "Send Instagram AI Reply",
@@ -627,7 +612,13 @@
       "position": [
         2672,
         192
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_IG",
+          "name": "Instagram Graph (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -662,21 +653,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PMS_AVAILABILITY_URL || 'https://example.invalid/pms/availability' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.PMS_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/pms/availability",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({property_id:$json.property_id,check_in:$json.check_in,check_out:$json.check_out,guests:$json.guests}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "d06559bc-fd9f-4a23-8270-75ae239ee22b",
       "name": "PMS Availability Check",
@@ -685,7 +669,13 @@
       "position": [
         448,
         704
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_PMS",
+          "name": "PMS API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -704,20 +694,13 @@
       "parameters": {
         "method": "POST",
         "url": "https://api.sarvam.ai/v1/chat/completions",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "api-subscription-key",
-              "value": "={{ $env.SARVAM_API_KEY || '' }}"
-            }
-          ]
-        },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.2}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "50130bd0-93ea-4ae2-bdd3-3d794d026f56",
       "name": "Sarvam Sales AI",
@@ -726,7 +709,13 @@
       "position": [
         896,
         704
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRED_SARVAM",
+          "name": "Sarvam AI (api-subscription-key)"
+        }
+      }
     },
     {
       "parameters": {
@@ -744,21 +733,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.GUEST_MESSAGING_URL || 'https://example.invalid/messaging/send' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/messaging/send",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({to:$json.guest_phone,message:$json.reply,lead_id:$json.lead_id}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "db8be722-4dba-47c9-a891-38b0da5771f5",
       "name": "Send Guest Message",
@@ -767,7 +749,13 @@
       "position": [
         1344,
         704
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_MSG",
+          "name": "Guest Messaging (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -831,20 +819,13 @@
       "parameters": {
         "method": "POST",
         "url": "https://api.sarvam.ai/v1/chat/completions",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "api-subscription-key",
-              "value": "={{ $env.SARVAM_API_KEY || '' }}"
-            }
-          ]
-        },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({model:\"sarvam-105b-conversations\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.2}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "8dca3dd1-e43b-4a51-bfd7-afc491485f05",
       "name": "Sarvam Conversation AI",
@@ -853,7 +834,13 @@
       "position": [
         672,
         928
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRED_SARVAM",
+          "name": "Sarvam AI (api-subscription-key)"
+        }
+      }
     },
     {
       "parameters": {
@@ -904,21 +891,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPPORT_TICKET_URL || 'https://example.invalid/support/tickets' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPPORT_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/support/tickets",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({call_id:$json.call_id,guest_phone:$json.guest_phone,property_id:$json.property_id,intent:$json.ai.intent,priority:$json.ai.priority,transcript:$json.transcript}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "7d3bb18f-453d-446c-b151-b20afdd7cbca",
       "name": "Create Voice Support Ticket",
@@ -927,26 +907,25 @@
       "position": [
         1344,
         832
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_SUPPORT",
+          "name": "Support API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SARVAM_AGENT_CALLBACK_URL || 'https://example.invalid/sarvam/callback' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SARVAM_AGENT_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/sarvam/callback",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({call_id:$('Build Voice Action').item.json.call_id,reply:$('Build Voice Action').item.json.ai.reply,escalate:$('Build Voice Action').item.json.escalate}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "294f8b72-9d34-407d-9ccb-f2f4e7b69c37",
       "name": "Return Voice Response",
@@ -955,7 +934,13 @@
       "position": [
         1568,
         928
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_VOICE",
+          "name": "Sarvam Voice Callback (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -994,17 +979,10 @@
     },
     {
       "parameters": {
-        "url": "={{ $env.CRM_FOLLOWUP_URL || 'https://example.invalid/crm/followups' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.CRM_API_KEY || '' }}"
-            }
-          ]
-        },
-        "options": {}
+        "url": "https://example.invalid/crm/followups",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "17989e4a-60d8-4757-8cef-168032749bff",
       "name": "Fetch Follow-up Candidates",
@@ -1013,7 +991,13 @@
       "position": [
         224,
         1152
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_CRM",
+          "name": "CRM API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1032,20 +1016,13 @@
       "parameters": {
         "method": "POST",
         "url": "https://api.sarvam.ai/v1/chat/completions",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "api-subscription-key",
-              "value": "={{ $env.SARVAM_API_KEY || '' }}"
-            }
-          ]
-        },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only the message text.\"},{role:\"user\",content:$json.prompt}],temperature:0.3}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "5b978cbb-5033-48eb-a351-31a5c759db49",
       "name": "Sarvam Follow-up Copy",
@@ -1054,7 +1031,13 @@
       "position": [
         672,
         1152
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRED_SARVAM",
+          "name": "Sarvam AI (api-subscription-key)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1073,21 +1056,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.GUEST_MESSAGING_URL || 'https://example.invalid/messaging/send' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/messaging/send",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({to:$json.phone,message:$json.message,lead_id:$json.lead_id}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "ad9c18b5-35a9-4b1c-8a42-96adf907be91",
       "name": "Send Follow-up",
@@ -1096,7 +1072,13 @@
       "position": [
         1120,
         1152
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_MSG",
+          "name": "Guest Messaging (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1120,17 +1102,10 @@
     },
     {
       "parameters": {
-        "url": "={{ $env.PMS_PRICING_DATA_URL || 'https://example.invalid/pms/pricing-data' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.PMS_API_KEY || '' }}"
-            }
-          ]
-        },
-        "options": {}
+        "url": "https://example.invalid/pms/pricing-data",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "ec52bd0a-a6a9-49c7-8d63-b260bea69fce",
       "name": "Fetch Property Metrics",
@@ -1139,7 +1114,13 @@
       "position": [
         224,
         1376
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_PMS",
+          "name": "PMS API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1158,20 +1139,13 @@
       "parameters": {
         "method": "POST",
         "url": "https://api.sarvam.ai/v1/chat/completions",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "api-subscription-key",
-              "value": "={{ $env.SARVAM_API_KEY || '' }}"
-            }
-          ]
-        },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.1}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "11f70dff-ce28-4e38-9944-782fd201ebe8",
       "name": "Sarvam Revenue AI",
@@ -1180,7 +1154,13 @@
       "position": [
         672,
         1376
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRED_SARVAM",
+          "name": "Sarvam AI (api-subscription-key)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1199,21 +1179,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.PRICING_APPROVAL_URL || 'https://example.invalid/pricing/approval' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.APPROVAL_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/pricing/approval",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify($json) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "da77ba86-4691-4433-94c7-aee7c7c59d53",
       "name": "Send Pricing Approval",
@@ -1222,7 +1195,13 @@
       "position": [
         1120,
         1376
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_APPROVAL",
+          "name": "Pricing Approval (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1271,20 +1250,13 @@
       "parameters": {
         "method": "POST",
         "url": "https://api.sarvam.ai/v1/chat/completions",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "api-subscription-key",
-              "value": "={{ $env.SARVAM_API_KEY || '' }}"
-            }
-          ]
-        },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.2}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "6be7177f-68a7-4fce-ba12-a618ab580ee1",
       "name": "Sarvam Review AI",
@@ -1293,7 +1265,13 @@
       "position": [
         672,
         1600
-      ]
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRED_SARVAM",
+          "name": "Sarvam AI (api-subscription-key)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1311,21 +1289,14 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.REVIEW_REPLY_URL || 'https://example.invalid/reviews/reply' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.REVIEW_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/reviews/reply",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({review_id:$json.review_id,reply:$json.ai.reply,property_id:$json.property_id}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "5ce97a0f-d76d-4a6d-bc93-8c2e165e1199",
       "name": "Publish Review Reply",
@@ -1334,26 +1305,25 @@
       "position": [
         1120,
         1600
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_REVIEW",
+          "name": "Review API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.STAFF_ALERT_URL || 'https://example.invalid/staff/alert' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.STAFF_ALERT_API_KEY || '' }}"
-            }
-          ]
-        },
+        "url": "https://example.invalid/staff/alert",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
         "body": "={{ JSON.stringify({review_id:$('Prepare Reputation Actions').item.json.review_id,property_id:$('Prepare Reputation Actions').item.json.property_id,needs_staff_review:$('Prepare Reputation Actions').item.json.needs_staff_review,issues:$('Prepare Reputation Actions').item.json.ai.issues,staff_action:$('Prepare Reputation Actions').item.json.ai.staff_action}) }}",
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "18087feb-6e8e-431c-88e0-65da04a4663d",
       "name": "Notify Staff",
@@ -1362,7 +1332,13 @@
       "position": [
         1344,
         1600
-      ]
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_STAFF",
+          "name": "Staff Alert (Bearer)"
+        }
+      }
     },
     {
       "parameters": {
@@ -1397,7 +1373,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// The Vercel serverless function is the only caller. It holds the shared key\n// server-side so the browser never sees it.\nconst c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst expected = $env.DASHBOARD_API_KEY || '';\nif (!expected) throw new Error('DASHBOARD_API_KEY is not set - refusing to serve metrics');\n\nconst got = String(($json.headers || {})['x-api-key'] || '');\nif (got.length !== expected.length || !c.timingSafeEqual(Buffer.from(got), Buffer.from(expected))) {\n  throw new Error('Unauthorized dashboard request');\n}\nreturn [{ json: { authorized: true } }];"
+        "jsCode": "// ─── PASTE YOUR DASHBOARD KEY HERE ───────────────────────────────────\n//     Same value as DASHBOARD_API_KEY in the Vercel project.\n//     Generate with: openssl rand -hex 32\nconst DASHBOARD_API_KEY = '';\n// ─────────────────────────────────────────────────────────────────────\n\nif (!DASHBOARD_API_KEY) throw new Error('DASHBOARD_API_KEY is empty - refusing to serve metrics');\n\nconst got = String(($json.headers || {})['x-api-key'] || '');\nlet diff = got.length ^ DASHBOARD_API_KEY.length;\nfor (let i = 0; i < got.length && i < DASHBOARD_API_KEY.length; i++) {\n  diff |= got.charCodeAt(i) ^ DASHBOARD_API_KEY.charCodeAt(i);\n}\nif (diff !== 0) throw new Error('Unauthorized dashboard request');\n\nreturn [{ json: { authorized: true } }];"
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b031",
       "name": "Authorize Dashboard Request",
@@ -1410,17 +1386,10 @@
     },
     {
       "parameters": {
-        "url": "={{ $env.CRM_METRICS_URL || 'https://example.invalid/crm/metrics' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.CRM_API_KEY || '' }}"
-            }
-          ]
-        },
-        "options": {}
+        "url": "https://example.invalid/crm/metrics",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth"
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b032",
       "name": "Fetch CRM Metrics",
@@ -1430,7 +1399,13 @@
         448,
         2304
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "CRED_CRM",
+          "name": "CRM API (Bearer)"
+        }
+      }
     },
     {
       "parameters": {

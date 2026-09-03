@@ -1,14 +1,11 @@
 # What the Bougainvilla workflow needs to run
 
-Two kinds of secret, and the difference matters:
+What each value **is** and where to get it. For **where to put it in n8n**, see
+**[n8n-config.md](n8n-config.md)** — the instance is Community Edition without
+server access, so everything is configured through the UI rather than `$env`.
 
-- **n8n credential objects** — created in the n8n UI (Credentials → New). The
-  workflow needs exactly **one**.
-- **Environment variables** — everything else. Set on the n8n instance, read at
-  runtime via `$env.X`. Nothing else in the workflow stores a secret.
-
-Nothing here is stored in the repo. `.env.example` is the checklist; the filled
-version never gets committed.
+Nothing here is stored in the repo. `.env.example` is your checklist and feeds
+`scripts/check-creds.mjs`; the filled version never gets committed.
 
 ---
 
@@ -123,17 +120,14 @@ Generate with `openssl rand -hex 32`.
 
 ---
 
-## n8n instance settings (not credentials, but required)
+## No instance settings required
 
-```bash
-NODE_FUNCTION_ALLOW_BUILTIN=crypto   # signature + token verification needs it
-WEBHOOK_URL=https://n8n.yourdomain.com   # must be public HTTPS; Meta will not call http://
-N8N_ENCRYPTION_KEY=<random>          # or n8n regenerates it and loses saved credentials
-```
+Earlier versions of this workflow needed `NODE_FUNCTION_ALLOW_BUILTIN=crypto`
+for signature verification. It no longer does — the Code node uses WebCrypto,
+which is available by default. Nothing has to be set on the n8n host.
 
-Meta will not deliver to `localhost`, a self-signed certificate, or plain HTTP.
-
----
+Meta still will not deliver to `localhost`, a self-signed certificate, or plain
+HTTP, so n8n must be on public HTTPS.
 
 ## Groups you can leave empty for now
 

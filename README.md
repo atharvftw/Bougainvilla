@@ -24,12 +24,14 @@ Start here:
 
 1. **[docs/deploy.md](docs/deploy.md)** — get both halves running
 2. **[docs/instagram-setup.md](docs/instagram-setup.md)** — click-by-click Meta setup
-3. **[docs/n8n-credentials.md](docs/n8n-credentials.md)** — every secret it needs
-4. **[docs/dashboard-contract.md](docs/dashboard-contract.md)** — the JSON the CRM must return
-5. **[n8n/README.md](n8n/README.md)** — what each flow does
+3. **[docs/n8n-config.md](docs/n8n-config.md)** — where each value goes in n8n (no server access needed)
+4. **[docs/n8n-credentials.md](docs/n8n-credentials.md)** — every secret it needs
+5. **[docs/dashboard-contract.md](docs/dashboard-contract.md)** — the JSON the CRM must return
+6. **[n8n/README.md](n8n/README.md)** — what each flow does
 
-Copy `.env.example` to `.env` as your checklist. Real values go into the n8n and
-Vercel environment settings, never into the repo.
+Copy `.env.example` to `.env` as your checklist, then `node scripts/check-creds.mjs`
+to validate the values before wiring anything up. Real values go into the n8n UI
+and the Vercel project, never into the repo.
 
 The dashboard runs on demo data until n8n is connected, and says so in the
 sidebar — so you can deploy it and wire the backend afterwards.

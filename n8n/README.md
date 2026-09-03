@@ -47,6 +47,15 @@ Meta Lead Ads branches are removed, not just disconnected):
   response of the *last HTTP call in the chain* rather than the workflow's own
   result. All three now respond with their intended payload.
 
+**Configuration model**
+
+- Configured entirely through the n8n UI — credentials for outbound auth, three
+  marked constants in Code nodes, one node parameter. No `$env`, no `$vars`, no
+  server access. See [../docs/n8n-config.md](../docs/n8n-config.md).
+- Signature verification uses **WebCrypto** (`crypto.subtle`) rather than
+  `require('crypto')`, so it needs no `NODE_FUNCTION_ALLOW_BUILTIN` on the host.
+  Digests verified byte-identical to Node's `createHmac`.
+
 **Route**
 
 - Targets **Instagram API with Instagram Login**, so the send node calls

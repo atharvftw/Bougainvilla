@@ -3,7 +3,8 @@
 This follows **Instagram API with Instagram Login** (`use_case_enum=INSTAGRAM_BUSINESS`
 in the app URL) — the route that does *not* require a Facebook Page.
 
-Everything below produces four values:
+Everything below produces four values. Where each one goes in n8n is
+**[n8n-config.md](n8n-config.md)**.
 
 ```
 META_APP_SECRET          Step 1
