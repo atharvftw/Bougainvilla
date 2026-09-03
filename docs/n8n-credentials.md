@@ -14,36 +14,42 @@ version never gets committed.
 
 ## 1 · Meta — Instagram DMs
 
-One Meta app, one System User token. developers.facebook.com → your app.
+Uses **Instagram API with Instagram Login** — no Facebook Page required.
 
 | Variable | Where to get it |
 |---|---|
-| `META_APP_SECRET` | Settings → Basic → **App Secret** |
-| `META_VERIFY_TOKEN` | **You invent this.** Any random string (`openssl rand -hex 16`). Paste the same value into Meta's "Verify token" box |
-| `META_ACCESS_TOKEN` | Business Settings → System Users → Generate token. A System User token, never the temporary one from the product tab |
-| `INSTAGRAM_BUSINESS_ID` | The Instagram professional account's IGSID |
+| `META_APP_SECRET` | App settings → Basic → **App Secret** |
+| `META_ACCESS_TOKEN` | Instagram → API setup → **Generate access tokens → Add account** |
+| `INSTAGRAM_BUSINESS_ID` | shown beside the token on the same panel |
+| `META_VERIFY_TOKEN` | **You invent this.** `openssl rand -hex 16`. Paste the same value into Meta's "Verify token" box |
 
-**Token permissions** (Instagram API with Facebook Login):
-`instagram_basic`, `instagram_manage_messages`,
-`pages_manage_metadata`, `pages_show_list`, `business_management`.
+**Permissions:** `instagram_business_basic`, `instagram_business_manage_messages`
+(the setup panel also asks for `instagram_business_manage_comments`; harmless).
 
-**Webhook fields to subscribe:** `messages`, `messaging_postbacks`.
+**Webhook field to subscribe:** `messages`.
 
 Step-by-step walkthrough: **[instagram-setup.md](instagram-setup.md)**.
 
 ### Three things that will bite you
 
+- **The token expires in 60 days.** An Instagram User access token is long-lived
+  but not permanent, and an expired one fails silently — the agent just stops
+  replying. Refresh before day 60 (it must be ≥24h old to refresh, and once
+  expired it cannot be refreshed at all):
+  `curl "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=$META_ACCESS_TOKEN"`
 - `META_APP_SECRET` is **required**, not optional. Every inbound webhook is
   HMAC-verified before anything is processed. Leave it unset and the workflow
   refuses the request rather than trusting it — the correct behaviour for a URL
   anyone can find.
-- **Instagram's 24-hour window.** Outside 24 hours of the guest's last message
-  you cannot send free text. The AI reply node sends free text, so it works for
-  live conversations but not cold outreach. The scheduled follow-up branch goes
-  through `GUEST_MESSAGING_URL` for exactly this reason.
 - **"Allow access to messages" must be ON** in the Instagram app
   (Settings → Messages and story replies). Without it the API receives no DMs,
   with no error anywhere.
+
+### Instagram's 24-hour window
+
+You can only message people who messaged you, within 24 hours of their last
+message. The AI reply node sends free text, so it covers live conversations and
+nothing colder. The scheduled follow-up branch uses `GUEST_MESSAGING_URL`.
 
 ## 2 · Sarvam AI
 

@@ -600,7 +600,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v23.0/' + ($env.INSTAGRAM_BUSINESS_ID || $json.recipientId || '') + '/messages' }}",
+        "url": "={{ 'https://graph.instagram.com/v23.0/' + ($env.INSTAGRAM_BUSINESS_ID || $json.recipientId || '') + '/messages' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

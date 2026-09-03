@@ -1,113 +1,99 @@
 # Connecting Instagram — click by click
 
-Everything below produces four values. Nothing else is needed from Meta.
+This follows **Instagram API with Instagram Login** (`use_case_enum=INSTAGRAM_BUSINESS`
+in the app URL) — the route that does *not* require a Facebook Page.
+
+Everything below produces four values:
 
 ```
-META_APP_SECRET          Step 2
-INSTAGRAM_BUSINESS_ID    Step 4
-META_ACCESS_TOKEN        Step 5
-META_VERIFY_TOKEN        Step 6   (you generate this one yourself)
+META_APP_SECRET          Step 1
+META_ACCESS_TOKEN        Step 3
+INSTAGRAM_BUSINESS_ID    Step 3
+META_VERIFY_TOKEN        Step 4   (you generate this one yourself)
 ```
 
-**Ads Manager is not involved.** None of these live there. You need two other
-Meta surfaces:
-
-| Surface | URL | What it gives you |
-|---|---|---|
-| Developers | developers.facebook.com | the app, App Secret, webhooks |
-| Business Settings | business.facebook.com/settings | the permanent token |
+> **If `developers.facebook.com` bounces you to `business.facebook.com`:** you are
+> logged in with a Meta Business Account, not a personal Facebook profile. Only a
+> personal profile can create apps. Add your personal profile as an Admin of the
+> business portfolio (business.facebook.com → Settings → People → Add), then log
+> in to the developer site as that profile.
 
 ---
 
-## Step 1 · Prerequisites
+## Step 0 · Prerequisites
 
-These block everything downstream, so clear them first.
-
-- [ ] A Facebook **Page** for Bougainvilla
 - [ ] Instagram account switched to **Professional** (Business or Creator)
-- [ ] That Instagram account **linked to the Page**
-      — Page → Settings → Linked accounts → Instagram
 - [ ] In the Instagram mobile app: **Settings → Messages and story replies →
       Allow access to messages** = **ON**
 
-That last one is the classic silent failure. With it off, every step below
-succeeds and no DM ever arrives at your webhook, with no error anywhere.
+That second one is the classic silent failure. With it off, every step below
+succeeds and no DM ever reaches your webhook, with no error anywhere.
+
+No Facebook Page is required on this route.
 
 ---
 
-## Step 2 · Create the app → `META_APP_SECRET`
+## Step 1 · App Secret → `META_APP_SECRET`
 
-developers.facebook.com → **My Apps → Create App**
-
-- Use case: **Other** → Type: **Business**
-- Link it to your Business portfolio
-
-Then **Settings → Basic** → next to **App Secret** click **Show**.
+In your app: **App settings → Basic** → next to **App Secret** click **Show**.
 
 → `META_APP_SECRET` ✅
 
-This is what signs every incoming webhook. The workflow rejects traffic when it
-is unset — that is deliberate, not a bug.
+This signs every incoming webhook. The workflow rejects traffic when it is
+unset — deliberate, not a bug.
 
 ---
 
-## Step 3 · Add the Instagram product
+## Step 2 · Permissions
 
-Left sidebar → **Add Product** → **Instagram** → **Set up**.
+On **Instagram → API setup with Instagram login**, panel 1 asks for:
 
-Choose **Instagram API with Facebook Login** (the route that uses your Page).
-Connect the Page from Step 1.
+```
+instagram_business_basic
+instagram_business_manage_comments
+instagram_business_manage_messages
+```
+
+The workflow only needs `instagram_business_basic` and
+`instagram_business_manage_messages`. Leaving comments in is harmless.
 
 ---
 
-## Step 4 · Instagram account ID → `INSTAGRAM_BUSINESS_ID`
+## Step 3 · Token + account ID → `META_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ID`
 
-Usually shown on the Instagram product page. If it isn't, get it once you have
-the token from Step 5:
+Panel 2, **Generate access tokens**. Two things in order, and the order matters:
+
+1. **Roles tab → Instagram Testers → Add people** → add your Instagram account.
+2. **Accept the invite from inside Instagram**: instagram.com → Settings →
+   **Apps and websites → Tester invites → Accept**. Until you accept, the next
+   step fails with an unhelpful error.
+3. Back on API setup → **Add account** → log in with the Instagram account.
+
+You now get:
+
+- the **access token** → `META_ACCESS_TOKEN` ✅
+- the **Instagram account ID** shown next to it → `INSTAGRAM_BUSINESS_ID` ✅
+
+### ⚠️ This token expires in 60 days
+
+Unlike a System User token, an Instagram User access token is long-lived but
+**not permanent**. Refresh it before day 60 (the token must be at least 24 hours
+old to be refreshable, and once expired it cannot be refreshed — you start over):
 
 ```bash
-curl "https://graph.facebook.com/v23.0/me/accounts?fields=instagram_business_account&access_token=TOKEN"
+curl "https://graph.instagram.com/refresh_access_token\
+?grant_type=ig_refresh_token&access_token=$META_ACCESS_TOKEN"
 ```
 
-The `instagram_business_account.id` in the response is the value.
-
-→ `INSTAGRAM_BUSINESS_ID` ✅
+Put the returned token back into `META_ACCESS_TOKEN` in n8n. **Set a calendar
+reminder for day 50.** An expired token fails silently — the agent simply stops
+replying.
 
 ---
 
-## Step 5 · Permanent token → `META_ACCESS_TOKEN`
+## Step 4 · Verify token → `META_VERIFY_TOKEN`
 
-**The step most people get wrong.** Tokens shown on the product tab expire in
-24 hours. Production needs a System User token, which does not expire.
-
-business.facebook.com/settings → **Users → System Users → Add**
-
-- Name: `bougainvilla-n8n`
-- Role: **Admin**
-
-**Assign Assets** — assign both:
-
-- your **App** → Full control
-- your **Page** → Full control
-
-**Generate new token** → select your app → tick:
-
-```
-instagram_basic            pages_manage_metadata
-instagram_manage_messages  pages_show_list
-business_management
-```
-
-→ `META_ACCESS_TOKEN` ✅
-
-**Copy it immediately.** It is displayed exactly once and cannot be retrieved
-again — if you lose it you generate a new one.
-
----
-
-## Step 6 · Verify token → `META_VERIFY_TOKEN`
-
-Nobody issues this. You make it up, and it just has to match on both sides:
+Nobody issues this. You invent it, and it only has to match on both sides:
 
 ```bash
 openssl rand -hex 16
@@ -117,20 +103,25 @@ openssl rand -hex 16
 
 ---
 
-## Step 7 · Webhook
+## Step 5 · Webhook (panel 3)
 
-Do this **after** n8n is live on public HTTPS with the workflow **activated** —
-Meta calls the URL during setup and the subscription fails if nothing answers.
+**This panel is blocked until two things are true**, which is why it looks
+unfillable right now:
 
-Instagram → **Configuration → Webhooks → Edit**:
+1. **n8n is deployed at a public HTTPS URL with the workflow activated.** Meta
+   calls the URL during setup; if nothing answers, the save fails.
+2. **The app is in published state** — panel 3 says so explicitly. A development
+   app receives no webhooks.
+
+Then fill in:
 
 | Field | Value |
 |---|---|
 | Callback URL | `https://your-n8n/webhook/bougainvilla-instagram` |
-| Verify token | from Step 6 |
-| Subscribe to fields | **`messages`**, **`messaging_postbacks`** |
+| Verify token | from Step 4 |
+| Subscribe to fields | **`messages`** |
 
-Test the handshake yourself before pasting anything into Meta:
+Test the handshake yourself *before* pasting anything into Meta:
 
 ```bash
 # expect: test123
@@ -144,40 +135,41 @@ curl -X POST -H 'content-type: application/json' -d '{"entry":[]}' \
   https://your-n8n/webhook/bougainvilla-instagram
 ```
 
-If the third one succeeds, `META_APP_SECRET` isn't reaching the Code node. Stop
-and fix that before pointing Meta at the URL.
+If the third succeeds, `META_APP_SECRET` isn't reaching the Code node. Fix that
+before pointing Meta at the URL.
 
 ---
 
-## Step 8 · App Review
+## Step 6 · App Review
 
-Until you pass review the app is in **development mode**: the agent can only
-reply to people added as app testers. Real customers need **Advanced Access** to
+In development mode the agent only replies to accounts with the **Instagram
+Tester** role. Real customers need Advanced Access to
 `instagram_business_manage_messages`, which requires Business Verification plus
 App Review.
 
-Start this early. It runs days to weeks and is the usual reason a finished build
-sits unusable.
+Start this early — it runs days to weeks and is the usual reason a finished
+build sits unusable.
 
 ---
 
-## The 24-hour rule
+## Two API facts this route changes
 
-Outside 24 hours of the guest's last message you cannot send free text on
-Instagram. The AI reply node sends free text, so it covers live conversations
-and will be rejected for anything colder. The scheduled follow-up branch routes
-through `GUEST_MESSAGING_URL` instead — point that at whatever channel you use
-for re-engagement.
+- **Host is `graph.instagram.com`**, not `graph.facebook.com`. The workflow's
+  send node uses the Instagram host; pointing it at the Facebook host returns an
+  OAuth error that reads like a bad token.
+- **You can only message people who messaged you first**, and only within
+  **24 hours** of their last message. The AI reply node sends free text, so it
+  covers live conversations and nothing colder. The scheduled follow-up branch
+  routes through `GUEST_MESSAGING_URL` for exactly this reason.
 
 ---
 
 ## Phone
 
-Meta is the wrong vendor for this. The workflow's voice branch expects a
-telephony provider to POST transcripts to
+Meta is the wrong vendor here. The workflow's voice branch expects a telephony
+provider to POST transcripts to
 `https://your-n8n/webhook/bougainvilla-voice-event`.
 
-**Sarvam Voice Agents** is the natural fit — you can rent an Indian number
-inside it, the speech and reasoning models are self-hosted, and data stays in
-India. Configure its callback to that URL and set `SARVAM_AGENT_CALLBACK_URL` /
+**Sarvam Voice Agents** is the natural fit — rent an Indian number inside it,
+models are self-hosted, data stays in India. Set `SARVAM_AGENT_CALLBACK_URL` and
 `SARVAM_AGENT_API_KEY` in n8n.

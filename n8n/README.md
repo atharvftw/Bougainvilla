@@ -47,6 +47,13 @@ Meta Lead Ads branches are removed, not just disconnected):
   response of the *last HTTP call in the chain* rather than the workflow's own
   result. All three now respond with their intended payload.
 
+**Route**
+
+- Targets **Instagram API with Instagram Login**, so the send node calls
+  `graph.instagram.com` — not `graph.facebook.com`, which the original used.
+  Pointing this route at the Facebook host returns an OAuth error that reads
+  like a bad token.
+
 **Security**
 
 - Meta signs every webhook with `X-Hub-Signature-256`. The original verified
