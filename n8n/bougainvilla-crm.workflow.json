@@ -3,41 +3,18 @@
   "nodes": [
     {
       "parameters": {
-        "path": "bougainvilla-meta",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "id": "cbc18486-04d2-4aec-875c-e6754dfb7f6a",
-      "name": "Meta Verify (Ads)",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [0, 1824],
-      "webhookId": "35460a16-fec0-4bde-bba1-05604fcc1219"
-    },
-    {
-      "parameters": {
-        "path": "bougainvilla-whatsapp",
-        "responseMode": "responseNode",
-        "options": {}
-      },
-      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b001",
-      "name": "Meta Verify (WhatsApp)",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [0, 1968],
-      "webhookId": "6c1f2a44-9b0d-4e52-8a71-2f0c9d1e5b02"
-    },
-    {
-      "parameters": {
         "path": "bougainvilla-instagram",
         "responseMode": "responseNode",
         "options": {}
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b002",
-      "name": "Meta Verify (Instagram)",
+      "name": "Meta Webhook Verify",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 2112],
+      "position": [
+        0,
+        1824
+      ],
       "webhookId": "6c1f2a44-9b0d-4e52-8a71-2f0c9d1e5b03"
     },
     {
@@ -48,7 +25,10 @@
       "name": "Check Meta Verify Token",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [224, 1968]
+      "position": [
+        224,
+        1824
+      ]
     },
     {
       "parameters": {
@@ -63,7 +43,11 @@
             {
               "leftValue": "={{ $json.verified }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "and"
@@ -74,7 +58,10 @@
       "name": "Verify Token Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [448, 1968]
+      "position": [
+        448,
+        1824
+      ]
     },
     {
       "parameters": {
@@ -86,70 +73,45 @@
       "name": "Return Challenge (200)",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [672, 1872]
+      "position": [
+        672,
+        1728
+      ]
     },
     {
       "parameters": {
         "respondWith": "text",
         "responseBody": "Forbidden",
-        "options": { "responseCode": 403 }
+        "options": {
+          "responseCode": 403
+        }
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b005",
       "name": "Reject Verification (403)",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [672, 2064]
-    },
-
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "bougainvilla-whatsapp",
-        "options": { "rawBody": true }
-      },
-      "id": "b3a102bf-25ec-4ec8-b490-ab99b46cbfd2",
-      "name": "WhatsApp Booking Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [0, 192],
-      "webhookId": "5120592c-951d-4382-b3bd-1d7c9cf7493e"
+      "position": [
+        672,
+        1920
+      ]
     },
     {
       "parameters": {
         "httpMethod": "POST",
         "path": "bougainvilla-instagram",
-        "options": { "rawBody": true }
+        "options": {
+          "rawBody": true
+        }
       },
       "id": "ccd34f32-5306-4aa6-bbd2-ed093e833384",
       "name": "Instagram Booking Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 384],
+      "position": [
+        0,
+        192
+      ],
       "webhookId": "26482967-8e6d-4f9e-90ab-64e9566ebc43"
-    },
-    {
-      "parameters": {
-        "httpMethod": "POST",
-        "path": "bougainvilla-meta",
-        "options": { "rawBody": true }
-      },
-      "id": "8ca04630-6ec9-4fd4-b30d-b6ec0f33c1c2",
-      "name": "Meta Ads Lead Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [0, 0],
-      "webhookId": "7f8bf8a0-fbf3-4077-997e-16a30be8ee23"
-    },
-
-    {
-      "parameters": {
-        "jsCode": "// Meta signs every webhook POST with HMAC-SHA256 over the RAW body.\n// Without this check anyone who learns the URL can inject fake bookings.\n// Requires: webhook node option \"Raw Body\" = on, and NODE_FUNCTION_ALLOW_BUILTIN=crypto\nconst c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst secret = $env.META_APP_SECRET || '';\nif (!secret) throw new Error('META_APP_SECRET is not set - refusing to process an unverified Meta webhook');\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hub-signature-256'] || '');\n\nconst b64 = item.binary && item.binary.data && item.binary.data.data;\nif (!b64) throw new Error('Raw body missing - enable the \"Raw Body\" option on the webhook node');\nconst raw = Buffer.from(b64, 'base64');\n\nconst expected = 'sha256=' + c.createHmac('sha256', secret).update(raw).digest('hex');\nconst a = Buffer.from(signature);\nconst b = Buffer.from(expected);\nif (a.length !== b.length || !c.timingSafeEqual(a, b)) {\n  throw new Error('Invalid X-Hub-Signature-256 - rejecting webhook');\n}\n\nreturn [{ json: { headers, body: JSON.parse(raw.toString('utf8')) } }];"
-      },
-      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b010",
-      "name": "Verify WhatsApp Signature",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [224, 192]
     },
     {
       "parameters": {
@@ -159,28 +121,10 @@
       "name": "Verify Instagram Signature",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [224, 384]
-    },
-    {
-      "parameters": {
-        "jsCode": "const c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst secret = $env.META_APP_SECRET || '';\nif (!secret) throw new Error('META_APP_SECRET is not set - refusing to process an unverified Meta webhook');\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hub-signature-256'] || '');\n\nconst b64 = item.binary && item.binary.data && item.binary.data.data;\nif (!b64) throw new Error('Raw body missing - enable the \"Raw Body\" option on the webhook node');\nconst raw = Buffer.from(b64, 'base64');\n\nconst expected = 'sha256=' + c.createHmac('sha256', secret).update(raw).digest('hex');\nconst a = Buffer.from(signature);\nconst b = Buffer.from(expected);\nif (a.length !== b.length || !c.timingSafeEqual(a, b)) {\n  throw new Error('Invalid X-Hub-Signature-256 - rejecting webhook');\n}\n\nreturn [{ json: { headers, body: JSON.parse(raw.toString('utf8')) } }];"
-      },
-      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b012",
-      "name": "Verify Meta Ads Signature",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [224, 0]
-    },
-
-    {
-      "parameters": {
-        "jsCode": "const b=$json.body||$json,v=b.entry?.[0]?.changes?.[0]?.value||{},m=v.messages?.[0]||{},c=v.contacts?.[0]||{}; const t=m.text?.body||m.button?.text||m.interactive?.button_reply?.title||m.interactive?.list_reply?.title||''; return [{json:{channel:'whatsapp',senderId:m.from||c.wa_id||'',recipientId:v.metadata?.phone_number_id||'',messageId:m.id||'',text:String(t||''),sessionId:`whatsapp:${m.from||c.wa_id||''}`,raw:b}}];"
-      },
-      "id": "70892a6e-2a81-4871-b8fa-ba0579b67f98",
-      "name": "Normalize WhatsApp Event",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [448, 192]
+      "position": [
+        224,
+        192
+      ]
     },
     {
       "parameters": {
@@ -190,50 +134,10 @@
       "name": "Normalize Instagram Event",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [448, 384]
-    },
-    {
-      "parameters": {
-        "jsCode": "const b=$json.body||$json,v=b.entry?.[0]?.changes?.[0]?.value||{},id=v.leadgen_id||b.leadgen_id||''; return [{json:{channel:'meta_ads',leadgenId:id,pageId:v.page_id||b.page_id||'',formId:v.form_id||b.form_id||'',sessionId:`meta_ads:${id}`,text:'New Meta Ads lead. Retrieve lead details and qualify for a property booking.',raw:b}}];"
-      },
-      "id": "20650dd4-2989-4cac-94e5-77c31a71ca31",
-      "name": "Normalize Meta Ads Lead",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [448, 0]
-    },
-    {
-      "parameters": {
-        "url": "={{ 'https://graph.facebook.com/v23.0/' + $json.leadgenId }}",
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            { "name": "fields", "value": "field_data,created_time,ad_id,form_id" }
-          ]
-        },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" }
-          ]
-        },
-        "options": {}
-      },
-      "id": "88fbe2bd-0b09-4897-a1e9-6b90b3efa3ed",
-      "name": "Fetch Meta Lead Details",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [672, 0]
-    },
-    {
-      "parameters": {
-        "jsCode": "const base=$('Normalize Meta Ads Lead').first().json,d=$json,fields={}; for(const f of (d.field_data||[]))fields[f.name]=(f.values||[])[0]??''; return [{json:{...base,lead:{...fields,created_time:d.created_time||'',ad_id:d.ad_id||''},text:`Meta Ads lead details: ${JSON.stringify(fields)}. Qualify this guest and move toward a reservation.`}}];"
-      },
-      "id": "11fa2d7d-a611-4ff0-b966-fe6618a3b4de",
-      "name": "Prepare Meta Lead For Agent",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [896, 0]
+      "position": [
+        448,
+        192
+      ]
     },
     {
       "parameters": {
@@ -243,20 +147,36 @@
       "name": "Build Unified Agent Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 192]
+      "position": [
+        1120,
+        192
+      ]
     },
     {
       "parameters": {
-        "model": { "__rl": true, "mode": "id", "value": "sarvam-105b" },
-        "options": { "maxTokens": 900, "temperature": 0.2 }
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "sarvam-105b"
+        },
+        "options": {
+          "maxTokens": 900,
+          "temperature": 0.2
+        }
       },
       "id": "fd8916ab-04f8-4dbc-ab9f-11cf8bd412da",
       "name": "Sarvam AI Chat Model",
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.2,
-      "position": [1088, 416],
+      "position": [
+        1088,
+        416
+      ],
       "credentials": {
-        "openAiApi": { "id": "REPLACE_ME", "name": "Sarvam AI (OpenAI-compatible)" }
+        "openAiApi": {
+          "id": "REPLACE_ME",
+          "name": "Sarvam AI (OpenAI-compatible)"
+        }
       }
     },
     {
@@ -273,19 +193,25 @@
       "name": "Bougainvilla AI Booking Agent",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 2.2,
-      "position": [1504, 192]
+      "position": [
+        1504,
+        192
+      ]
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $json.sessionId || ('guest:' + ($json.senderId || $json.leadgenId || 'unknown')) }}",
+        "sessionKey": "={{ $json.sessionId || ('guest:' + ($json.senderId || 'unknown')) }}",
         "contextWindowLength": 12
       },
       "id": "e1701f0f-67ec-4f4b-adf0-6b11ab980c3f",
       "name": "Guest Conversation Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
-      "position": [1248, 416]
+      "position": [
+        1248,
+        416
+      ]
     },
     {
       "parameters": {
@@ -306,10 +232,26 @@
         "specifyBody": "model",
         "placeholderDefinitions": {
           "values": [
-            { "name": "property_id", "description": "Optional property ID", "type": "string" },
-            { "name": "check_in", "description": "Check-in YYYY-MM-DD", "type": "string" },
-            { "name": "check_out", "description": "Check-out YYYY-MM-DD", "type": "string" },
-            { "name": "guests", "description": "Guest count", "type": "number" }
+            {
+              "name": "property_id",
+              "description": "Optional property ID",
+              "type": "string"
+            },
+            {
+              "name": "check_in",
+              "description": "Check-in YYYY-MM-DD",
+              "type": "string"
+            },
+            {
+              "name": "check_out",
+              "description": "Check-out YYYY-MM-DD",
+              "type": "string"
+            },
+            {
+              "name": "guests",
+              "description": "Guest count",
+              "type": "number"
+            }
           ]
         },
         "optimizeResponse": true,
@@ -319,7 +261,10 @@
       "name": "Tool - Check Availability",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1376, 416]
+      "position": [
+        1376,
+        416
+      ]
     },
     {
       "parameters": {
@@ -340,11 +285,31 @@
         "specifyBody": "model",
         "placeholderDefinitions": {
           "values": [
-            { "name": "check_in", "description": "Check-in date", "type": "string" },
-            { "name": "check_out", "description": "Check-out date", "type": "string" },
-            { "name": "guests", "description": "Guest count", "type": "number" },
-            { "name": "budget", "description": "Budget", "type": "number" },
-            { "name": "preferences", "description": "Location/amenities", "type": "string" }
+            {
+              "name": "check_in",
+              "description": "Check-in date",
+              "type": "string"
+            },
+            {
+              "name": "check_out",
+              "description": "Check-out date",
+              "type": "string"
+            },
+            {
+              "name": "guests",
+              "description": "Guest count",
+              "type": "number"
+            },
+            {
+              "name": "budget",
+              "description": "Budget",
+              "type": "number"
+            },
+            {
+              "name": "preferences",
+              "description": "Location/amenities",
+              "type": "string"
+            }
           ]
         },
         "optimizeResponse": true,
@@ -354,7 +319,10 @@
       "name": "Tool - Property Search",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1504, 416]
+      "position": [
+        1504,
+        416
+      ]
     },
     {
       "parameters": {
@@ -375,13 +343,41 @@
         "specifyBody": "model",
         "placeholderDefinitions": {
           "values": [
-            { "name": "property_id", "description": "Selected property", "type": "string" },
-            { "name": "check_in", "description": "Check-in", "type": "string" },
-            { "name": "check_out", "description": "Check-out", "type": "string" },
-            { "name": "guests", "description": "Guest count", "type": "number" },
-            { "name": "guest_name", "description": "Guest name", "type": "string" },
-            { "name": "guest_phone", "description": "Guest phone", "type": "string" },
-            { "name": "guest_email", "description": "Guest email optional", "type": "string" }
+            {
+              "name": "property_id",
+              "description": "Selected property",
+              "type": "string"
+            },
+            {
+              "name": "check_in",
+              "description": "Check-in",
+              "type": "string"
+            },
+            {
+              "name": "check_out",
+              "description": "Check-out",
+              "type": "string"
+            },
+            {
+              "name": "guests",
+              "description": "Guest count",
+              "type": "number"
+            },
+            {
+              "name": "guest_name",
+              "description": "Guest name",
+              "type": "string"
+            },
+            {
+              "name": "guest_phone",
+              "description": "Guest phone",
+              "type": "string"
+            },
+            {
+              "name": "guest_email",
+              "description": "Guest email optional",
+              "type": "string"
+            }
           ]
         },
         "optimizeResponse": true,
@@ -391,7 +387,10 @@
       "name": "Tool - Create Booking",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1632, 416]
+      "position": [
+        1632,
+        416
+      ]
     },
     {
       "parameters": {
@@ -412,11 +411,31 @@
         "specifyBody": "model",
         "placeholderDefinitions": {
           "values": [
-            { "name": "channel", "description": "Source channel", "type": "string" },
-            { "name": "name", "description": "Guest name", "type": "string" },
-            { "name": "phone", "description": "Guest phone", "type": "string" },
-            { "name": "message", "description": "Latest message", "type": "string" },
-            { "name": "lead_stage", "description": "Lead stage", "type": "string" }
+            {
+              "name": "channel",
+              "description": "Source channel",
+              "type": "string"
+            },
+            {
+              "name": "name",
+              "description": "Guest name",
+              "type": "string"
+            },
+            {
+              "name": "phone",
+              "description": "Guest phone",
+              "type": "string"
+            },
+            {
+              "name": "message",
+              "description": "Latest message",
+              "type": "string"
+            },
+            {
+              "name": "lead_stage",
+              "description": "Lead stage",
+              "type": "string"
+            }
           ]
         },
         "optimizeResponse": true,
@@ -426,7 +445,10 @@
       "name": "Tool - Create CRM Lead",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1824, 416]
+      "position": [
+        1824,
+        416
+      ]
     },
     {
       "parameters": {
@@ -447,10 +469,26 @@
         "specifyBody": "model",
         "placeholderDefinitions": {
           "values": [
-            { "name": "guest_id", "description": "Guest ID", "type": "string" },
-            { "name": "issue", "description": "Issue", "type": "string" },
-            { "name": "priority", "description": "Priority", "type": "string" },
-            { "name": "channel", "description": "Channel", "type": "string" }
+            {
+              "name": "guest_id",
+              "description": "Guest ID",
+              "type": "string"
+            },
+            {
+              "name": "issue",
+              "description": "Issue",
+              "type": "string"
+            },
+            {
+              "name": "priority",
+              "description": "Priority",
+              "type": "string"
+            },
+            {
+              "name": "channel",
+              "description": "Channel",
+              "type": "string"
+            }
           ]
         },
         "optimizeResponse": true,
@@ -460,7 +498,10 @@
       "name": "Tool - Create Support Ticket",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [1952, 416]
+      "position": [
+        1952,
+        416
+      ]
     },
     {
       "parameters": {
@@ -481,10 +522,26 @@
         "specifyBody": "model",
         "placeholderDefinitions": {
           "values": [
-            { "name": "guest_id", "description": "Guest ID", "type": "string" },
-            { "name": "reason", "description": "Reason", "type": "string" },
-            { "name": "priority", "description": "Priority", "type": "string" },
-            { "name": "summary", "description": "Summary", "type": "string" }
+            {
+              "name": "guest_id",
+              "description": "Guest ID",
+              "type": "string"
+            },
+            {
+              "name": "reason",
+              "description": "Reason",
+              "type": "string"
+            },
+            {
+              "name": "priority",
+              "description": "Priority",
+              "type": "string"
+            },
+            {
+              "name": "summary",
+              "description": "Summary",
+              "type": "string"
+            }
           ]
         },
         "optimizeResponse": true,
@@ -494,7 +551,10 @@
       "name": "Tool - Human Handoff",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
-      "position": [2160, 400]
+      "position": [
+        2160,
+        400
+      ]
     },
     {
       "parameters": {
@@ -504,7 +564,10 @@
       "name": "Parse AI Agent Decision",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2224, 192]
+      "position": [
+        2224,
+        192
+      ]
     },
     {
       "parameters": {
@@ -513,99 +576,26 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.CRM_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.CRM_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({channel:$json.channel,guest_id:$json.senderId||$json.leadgenId,name:$json.lead?.name||'',phone:$json.lead?.phone||$json.senderId||'',message:$json.text||'',intent:$json.intent,lead_stage:$json.lead_stage,booking_status:$json.booking_status,property_id:$json.property_id||'',booking_id:$json.booking_id||''}) }}",
+        "body": "={{ JSON.stringify({channel:$json.channel,guest_id:$json.senderId,message:$json.text||'',intent:$json.intent,lead_stage:$json.lead_stage,booking_status:$json.booking_status,property_id:$json.property_id||'',booking_id:$json.booking_id||''}) }}",
         "options": {}
       },
       "id": "045cc0f4-ae99-48f9-8407-800955c97da7",
       "name": "Log AI Lead Decision",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2448, 192]
-    },
-    {
-      "parameters": {
-        "rules": {
-          "values": [
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.channel }}",
-                    "rightValue": "whatsapp",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "outputKey": "whatsapp"
-            },
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.channel }}",
-                    "rightValue": "instagram",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "outputKey": "instagram"
-            },
-            {
-              "conditions": {
-                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.channel }}",
-                    "rightValue": "meta_ads",
-                    "operator": { "type": "string", "operation": "equals" }
-                  }
-                ],
-                "combinator": "and"
-              },
-              "outputKey": "meta_ads"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "id": "f918e320-57e6-4514-83d3-b116346b63dc",
-      "name": "Route By Channel",
-      "type": "n8n-nodes-base.switch",
-      "typeVersion": 3.2,
-      "position": [2672, 192]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v23.0/' + ($env.WHATSAPP_PHONE_NUMBER_ID || '') + '/messages' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({messaging_product:'whatsapp',to:$json.senderId,type:'text',text:{preview_url:false,body:$json.reply}}) }}",
-        "options": {}
-      },
-      "id": "a3236387-1228-4f39-88f5-d1dec10bebc7",
-      "name": "Send WhatsApp AI Reply",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2896, 0]
+      "position": [
+        2448,
+        192
+      ]
     },
     {
       "parameters": {
@@ -614,8 +604,14 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" },
-            { "name": "Content-Type", "value": "application/json" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
           ]
         },
         "sendBody": true,
@@ -628,85 +624,11 @@
       "name": "Send Instagram AI Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2896, 192]
+      "position": [
+        2672,
+        192
+      ]
     },
-    {
-      "parameters": {
-        "jsCode": "const phone=$json.lead?.phone||$json.lead?.whatsapp||'';return [{json:{...$json,leadPhone:String(phone).replace(/[^0-9]/g,''),metaLeadReply:$json.reply}}];"
-      },
-      "id": "b6080108-b38b-488d-b9ed-7b8751697371",
-      "name": "Prepare Meta Ads Lead Response",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2896, 384]
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.leadPhone }}",
-              "rightValue": "",
-              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "d9f7a5f4-b370-4891-853d-ec2c2850c95b",
-      "name": "Meta Lead Has WhatsApp",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [3120, 384]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ 'https://graph.facebook.com/v23.0/' + ($env.WHATSAPP_PHONE_NUMBER_ID || '') + '/messages' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" },
-            { "name": "Content-Type", "value": "application/json" }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({messaging_product:'whatsapp',to:$json.leadPhone,type:'text',text:{preview_url:false,body:$json.metaLeadReply}}) }}",
-        "options": {}
-      },
-      "id": "9f9001fb-6d7c-42eb-b897-fb890da62f96",
-      "name": "Send Meta Lead WhatsApp",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3344, 288]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.STAFF_ALERT_URL || 'https://example.invalid/staff/alert' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.STAFF_ALERT_API_KEY || '' }}" }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({source:'meta_ads',leadgen_id:$json.leadgenId,reply:$json.reply,lead:$json.lead||{}}) }}",
-        "options": {}
-      },
-      "id": "2da4514b-7ed2-480a-b5d0-554b56347dcf",
-      "name": "Notify Team For Meta Lead",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [3344, 480]
-    },
-
     {
       "parameters": {
         "httpMethod": "POST",
@@ -718,7 +640,10 @@
       "name": "Booking Lead Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 704],
+      "position": [
+        0,
+        704
+      ],
       "webhookId": "aa02aefa-a81e-41fe-849b-718c1f847fd6"
     },
     {
@@ -729,7 +654,10 @@
       "name": "Normalize Booking Lead",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [224, 704]
+      "position": [
+        224,
+        704
+      ]
     },
     {
       "parameters": {
@@ -738,7 +666,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.PMS_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.PMS_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -751,7 +682,10 @@
       "name": "PMS Availability Check",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [448, 704]
+      "position": [
+        448,
+        704
+      ]
     },
     {
       "parameters": {
@@ -761,7 +695,10 @@
       "name": "Prepare Sarvam Sales Decision",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [672, 704]
+      "position": [
+        672,
+        704
+      ]
     },
     {
       "parameters": {
@@ -770,7 +707,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+            {
+              "name": "api-subscription-key",
+              "value": "={{ $env.SARVAM_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -783,7 +723,10 @@
       "name": "Sarvam Sales AI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [896, 704]
+      "position": [
+        896,
+        704
+      ]
     },
     {
       "parameters": {
@@ -793,7 +736,10 @@
       "name": "Build Booking Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 704]
+      "position": [
+        1120,
+        704
+      ]
     },
     {
       "parameters": {
@@ -802,7 +748,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -815,7 +764,10 @@
       "name": "Send Guest Message",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1344, 704]
+      "position": [
+        1344,
+        704
+      ]
     },
     {
       "parameters": {
@@ -827,9 +779,11 @@
       "name": "Respond to Lead",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1568, 704]
+      "position": [
+        1568,
+        704
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
@@ -841,7 +795,10 @@
       "name": "Sarvam Voice Agent Event",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 928],
+      "position": [
+        0,
+        928
+      ],
       "webhookId": "39e3585d-bced-4751-8678-c62504168c24"
     },
     {
@@ -852,7 +809,10 @@
       "name": "Normalize Voice Event",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [224, 928]
+      "position": [
+        224,
+        928
+      ]
     },
     {
       "parameters": {
@@ -862,7 +822,10 @@
       "name": "Voice Triage Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [448, 928]
+      "position": [
+        448,
+        928
+      ]
     },
     {
       "parameters": {
@@ -871,7 +834,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+            {
+              "name": "api-subscription-key",
+              "value": "={{ $env.SARVAM_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -884,7 +850,10 @@
       "name": "Sarvam Conversation AI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [672, 928]
+      "position": [
+        672,
+        928
+      ]
     },
     {
       "parameters": {
@@ -894,17 +863,29 @@
       "name": "Build Voice Action",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [896, 928]
+      "position": [
+        896,
+        928
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
           "conditions": [
             {
               "leftValue": "={{ $json.escalate }}",
               "rightValue": true,
-              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "and"
@@ -915,7 +896,10 @@
       "name": "Voice Needs Human",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1120, 928]
+      "position": [
+        1120,
+        928
+      ]
     },
     {
       "parameters": {
@@ -924,7 +908,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.SUPPORT_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPPORT_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -937,7 +924,10 @@
       "name": "Create Voice Support Ticket",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1344, 832]
+      "position": [
+        1344,
+        832
+      ]
     },
     {
       "parameters": {
@@ -946,7 +936,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.SARVAM_AGENT_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SARVAM_AGENT_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -959,7 +952,10 @@
       "name": "Return Voice Response",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1568, 928]
+      "position": [
+        1568,
+        928
+      ]
     },
     {
       "parameters": {
@@ -971,18 +967,30 @@
       "name": "Respond Voice Event",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1792, 928]
+      "position": [
+        1792,
+        928
+      ]
     },
-
     {
       "parameters": {
-        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 */2 * * *" }] }
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */2 * * *"
+            }
+          ]
+        }
       },
       "id": "900b8bf3-a164-4549-b851-6846162d1c9a",
       "name": "Follow-up Scheduler",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 1152]
+      "position": [
+        0,
+        1152
+      ]
     },
     {
       "parameters": {
@@ -990,7 +998,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.CRM_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.CRM_API_KEY || '' }}"
+            }
           ]
         },
         "options": {}
@@ -999,7 +1010,10 @@
       "name": "Fetch Follow-up Candidates",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [224, 1152]
+      "position": [
+        224,
+        1152
+      ]
     },
     {
       "parameters": {
@@ -1009,7 +1023,10 @@
       "name": "Build Follow-up Messages",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [448, 1152]
+      "position": [
+        448,
+        1152
+      ]
     },
     {
       "parameters": {
@@ -1018,7 +1035,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+            {
+              "name": "api-subscription-key",
+              "value": "={{ $env.SARVAM_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -1031,7 +1051,10 @@
       "name": "Sarvam Follow-up Copy",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [672, 1152]
+      "position": [
+        672,
+        1152
+      ]
     },
     {
       "parameters": {
@@ -1042,7 +1065,10 @@
       "name": "Prepare Follow-up Send",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [896, 1152]
+      "position": [
+        896,
+        1152
+      ]
     },
     {
       "parameters": {
@@ -1051,7 +1077,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -1064,18 +1093,30 @@
       "name": "Send Follow-up",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 1152]
+      "position": [
+        1120,
+        1152
+      ]
     },
-
     {
       "parameters": {
-        "rule": { "interval": [{ "field": "cronExpression", "expression": "15 5 * * *" }] }
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "15 5 * * *"
+            }
+          ]
+        }
       },
       "id": "78e8e821-f861-4553-828c-60c5fd314542",
       "name": "Pricing Scheduler",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
-      "position": [0, 1376]
+      "position": [
+        0,
+        1376
+      ]
     },
     {
       "parameters": {
@@ -1083,7 +1124,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.PMS_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.PMS_API_KEY || '' }}"
+            }
           ]
         },
         "options": {}
@@ -1092,7 +1136,10 @@
       "name": "Fetch Property Metrics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [224, 1376]
+      "position": [
+        224,
+        1376
+      ]
     },
     {
       "parameters": {
@@ -1102,7 +1149,10 @@
       "name": "Build Pricing Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [448, 1376]
+      "position": [
+        448,
+        1376
+      ]
     },
     {
       "parameters": {
@@ -1111,7 +1161,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+            {
+              "name": "api-subscription-key",
+              "value": "={{ $env.SARVAM_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -1124,7 +1177,10 @@
       "name": "Sarvam Revenue AI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [672, 1376]
+      "position": [
+        672,
+        1376
+      ]
     },
     {
       "parameters": {
@@ -1135,7 +1191,10 @@
       "name": "Prepare Pricing Approval",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [896, 1376]
+      "position": [
+        896,
+        1376
+      ]
     },
     {
       "parameters": {
@@ -1144,7 +1203,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.APPROVAL_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.APPROVAL_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -1157,9 +1219,11 @@
       "name": "Send Pricing Approval",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 1376]
+      "position": [
+        1120,
+        1376
+      ]
     },
-
     {
       "parameters": {
         "httpMethod": "POST",
@@ -1171,7 +1235,10 @@
       "name": "Review Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 1600],
+      "position": [
+        0,
+        1600
+      ],
       "webhookId": "f509d0da-7f4f-4af6-86b7-264069c63f26"
     },
     {
@@ -1182,7 +1249,10 @@
       "name": "Normalize Review",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [224, 1600]
+      "position": [
+        224,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -1192,7 +1262,10 @@
       "name": "Build Reputation Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [448, 1600]
+      "position": [
+        448,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -1201,7 +1274,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+            {
+              "name": "api-subscription-key",
+              "value": "={{ $env.SARVAM_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -1214,7 +1290,10 @@
       "name": "Sarvam Review AI",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [672, 1600]
+      "position": [
+        672,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -1224,7 +1303,10 @@
       "name": "Prepare Reputation Actions",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [896, 1600]
+      "position": [
+        896,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -1233,7 +1315,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.REVIEW_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.REVIEW_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -1246,7 +1331,10 @@
       "name": "Publish Review Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1120, 1600]
+      "position": [
+        1120,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -1255,7 +1343,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.STAFF_ALERT_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.STAFF_ALERT_API_KEY || '' }}"
+            }
           ]
         },
         "sendBody": true,
@@ -1268,7 +1359,10 @@
       "name": "Notify Staff",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1344, 1600]
+      "position": [
+        1344,
+        1600
+      ]
     },
     {
       "parameters": {
@@ -1280,9 +1374,11 @@
       "name": "Respond Review",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1568, 1600]
+      "position": [
+        1568,
+        1600
+      ]
     },
-
     {
       "parameters": {
         "path": "bougainvilla-dashboard",
@@ -1293,7 +1389,10 @@
       "name": "Dashboard Metrics Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [0, 2304],
+      "position": [
+        0,
+        2304
+      ],
       "webhookId": "b7f2c9a1-0e53-4d88-91aa-3c6e2d40f701"
     },
     {
@@ -1304,7 +1403,10 @@
       "name": "Authorize Dashboard Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [224, 2304]
+      "position": [
+        224,
+        2304
+      ]
     },
     {
       "parameters": {
@@ -1312,7 +1414,10 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "=Bearer {{ $env.CRM_API_KEY || '' }}" }
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.CRM_API_KEY || '' }}"
+            }
           ]
         },
         "options": {}
@@ -1321,18 +1426,24 @@
       "name": "Fetch CRM Metrics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [448, 2304],
+      "position": [
+        448,
+        2304
+      ],
       "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "jsCode": "// Shapes whatever the CRM returns into the contract the dashboard reads.\n// If the CRM is unreachable the dashboard is told so and keeps its demo numbers.\nconst r = $json || {};\nconst failed = !!r.error || Object.keys(r).length === 0;\nconst src = r.data || r;\nconst num = (v, d = null) => (typeof v === 'number' && isFinite(v) ? v : d);\n\nreturn [{ json: {\n  generated_at: new Date().toISOString(),\n  source: failed ? 'unavailable' : 'crm',\n  stats: {\n    total_bookings: num(src.total_bookings),\n    active_leads:   num(src.active_leads),\n    revenue_mtd:    num(src.revenue_mtd),\n    avg_rating:     num(src.avg_rating)\n  },\n  channels: {\n    whatsapp:  num(src.channels?.whatsapp),\n    instagram: num(src.channels?.instagram),\n    meta_ads:  num(src.channels?.meta_ads),\n    voice:     num(src.channels?.voice)\n  },\n  revenue_series: {\n    labels: Array.isArray(src.revenue_series?.labels) ? src.revenue_series.labels : null,\n    values: Array.isArray(src.revenue_series?.values) ? src.revenue_series.values : null\n  },\n  recent_bookings: Array.isArray(src.recent_bookings) ? src.recent_bookings.slice(0, 8) : null,\n  recent_leads:    Array.isArray(src.recent_leads)    ? src.recent_leads.slice(0, 8)    : null\n} }];"
+        "jsCode": "// Shapes whatever the CRM returns into the contract the dashboard reads.\n// If the CRM is unreachable the dashboard is told so and keeps its demo numbers.\nconst r = $json || {};\nconst failed = !!r.error || Object.keys(r).length === 0;\nconst src = r.data || r;\nconst num = (v, d = null) => (typeof v === 'number' && isFinite(v) ? v : d);\n\nreturn [{ json: {\n  generated_at: new Date().toISOString(),\n  source: failed ? 'unavailable' : 'crm',\n  stats: {\n    total_bookings: num(src.total_bookings),\n    active_leads:   num(src.active_leads),\n    revenue_mtd:    num(src.revenue_mtd),\n    avg_rating:     num(src.avg_rating)\n  },\n  channels: {\n    instagram: num(src.channels?.instagram),\n    direct:    num(src.channels?.direct),\n    voice:     num(src.channels?.voice)\n  },\n  revenue_series: {\n    labels: Array.isArray(src.revenue_series?.labels) ? src.revenue_series.labels : null,\n    values: Array.isArray(src.revenue_series?.values) ? src.revenue_series.values : null\n  },\n  recent_bookings: Array.isArray(src.recent_bookings) ? src.recent_bookings.slice(0, 8) : null,\n  recent_leads:    Array.isArray(src.recent_leads)    ? src.recent_leads.slice(0, 8)    : null\n} }];"
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b033",
       "name": "Shape Dashboard Metrics",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [672, 2304]
+      "position": [
+        672,
+        2304
+      ]
     },
     {
       "parameters": {
@@ -1344,111 +1455,625 @@
       "name": "Respond Dashboard Metrics",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [896, 2304]
+      "position": [
+        896,
+        2304
+      ]
     }
   ],
   "connections": {
-    "Meta Verify (Ads)":       { "main": [[{ "node": "Check Meta Verify Token", "type": "main", "index": 0 }]] },
-    "Meta Verify (WhatsApp)":  { "main": [[{ "node": "Check Meta Verify Token", "type": "main", "index": 0 }]] },
-    "Meta Verify (Instagram)": { "main": [[{ "node": "Check Meta Verify Token", "type": "main", "index": 0 }]] },
-    "Check Meta Verify Token": { "main": [[{ "node": "Verify Token Valid", "type": "main", "index": 0 }]] },
+    "Check Meta Verify Token": {
+      "main": [
+        [
+          {
+            "node": "Verify Token Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Verify Token Valid": {
       "main": [
-        [{ "node": "Return Challenge (200)", "type": "main", "index": 0 }],
-        [{ "node": "Reject Verification (403)", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Return Challenge (200)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Verification (403)",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-
-    "WhatsApp Booking Webhook":  { "main": [[{ "node": "Verify WhatsApp Signature", "type": "main", "index": 0 }]] },
-    "Instagram Booking Webhook": { "main": [[{ "node": "Verify Instagram Signature", "type": "main", "index": 0 }]] },
-    "Meta Ads Lead Webhook":     { "main": [[{ "node": "Verify Meta Ads Signature", "type": "main", "index": 0 }]] },
-
-    "Verify WhatsApp Signature":  { "main": [[{ "node": "Normalize WhatsApp Event", "type": "main", "index": 0 }]] },
-    "Verify Instagram Signature": { "main": [[{ "node": "Normalize Instagram Event", "type": "main", "index": 0 }]] },
-    "Verify Meta Ads Signature":  { "main": [[{ "node": "Normalize Meta Ads Lead", "type": "main", "index": 0 }]] },
-
-    "Normalize WhatsApp Event":  { "main": [[{ "node": "Build Unified Agent Context", "type": "main", "index": 0 }]] },
-    "Normalize Instagram Event": { "main": [[{ "node": "Build Unified Agent Context", "type": "main", "index": 0 }]] },
-    "Normalize Meta Ads Lead":   { "main": [[{ "node": "Fetch Meta Lead Details", "type": "main", "index": 0 }]] },
-    "Fetch Meta Lead Details":   { "main": [[{ "node": "Prepare Meta Lead For Agent", "type": "main", "index": 0 }]] },
-    "Prepare Meta Lead For Agent": { "main": [[{ "node": "Build Unified Agent Context", "type": "main", "index": 0 }]] },
-
-    "Build Unified Agent Context": { "main": [[{ "node": "Bougainvilla AI Booking Agent", "type": "main", "index": 0 }]] },
-    "Sarvam AI Chat Model":        { "ai_languageModel": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_languageModel", "index": 0 }]] },
-    "Guest Conversation Memory":   { "ai_memory": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_memory", "index": 0 }]] },
-    "Tool - Check Availability":   { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
-    "Tool - Property Search":      { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
-    "Tool - Create Booking":       { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
-    "Tool - Create CRM Lead":      { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
-    "Tool - Create Support Ticket":{ "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
-    "Tool - Human Handoff":        { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
-
-    "Bougainvilla AI Booking Agent": { "main": [[{ "node": "Parse AI Agent Decision", "type": "main", "index": 0 }]] },
-    "Parse AI Agent Decision":       { "main": [[{ "node": "Log AI Lead Decision", "type": "main", "index": 0 }]] },
-    "Log AI Lead Decision":          { "main": [[{ "node": "Route By Channel", "type": "main", "index": 0 }]] },
-    "Route By Channel": {
+    "Instagram Booking Webhook": {
       "main": [
-        [{ "node": "Send WhatsApp AI Reply", "type": "main", "index": 0 }],
-        [{ "node": "Send Instagram AI Reply", "type": "main", "index": 0 }],
-        [{ "node": "Prepare Meta Ads Lead Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Verify Instagram Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Prepare Meta Ads Lead Response": { "main": [[{ "node": "Meta Lead Has WhatsApp", "type": "main", "index": 0 }]] },
-    "Meta Lead Has WhatsApp": {
+    "Verify Instagram Signature": {
       "main": [
-        [{ "node": "Send Meta Lead WhatsApp", "type": "main", "index": 0 }],
-        [{ "node": "Notify Team For Meta Lead", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Normalize Instagram Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-
-    "Booking Lead Webhook":          { "main": [[{ "node": "Normalize Booking Lead", "type": "main", "index": 0 }]] },
-    "Normalize Booking Lead":        { "main": [[{ "node": "PMS Availability Check", "type": "main", "index": 0 }]] },
-    "PMS Availability Check":        { "main": [[{ "node": "Prepare Sarvam Sales Decision", "type": "main", "index": 0 }]] },
-    "Prepare Sarvam Sales Decision": { "main": [[{ "node": "Sarvam Sales AI", "type": "main", "index": 0 }]] },
-    "Sarvam Sales AI":               { "main": [[{ "node": "Build Booking Response", "type": "main", "index": 0 }]] },
-    "Build Booking Response":        { "main": [[{ "node": "Send Guest Message", "type": "main", "index": 0 }]] },
-    "Send Guest Message":            { "main": [[{ "node": "Respond to Lead", "type": "main", "index": 0 }]] },
-
-    "Sarvam Voice Agent Event": { "main": [[{ "node": "Normalize Voice Event", "type": "main", "index": 0 }]] },
-    "Normalize Voice Event":    { "main": [[{ "node": "Voice Triage Prompt", "type": "main", "index": 0 }]] },
-    "Voice Triage Prompt":      { "main": [[{ "node": "Sarvam Conversation AI", "type": "main", "index": 0 }]] },
-    "Sarvam Conversation AI":   { "main": [[{ "node": "Build Voice Action", "type": "main", "index": 0 }]] },
-    "Build Voice Action":       { "main": [[{ "node": "Voice Needs Human", "type": "main", "index": 0 }]] },
+    "Normalize Instagram Event": {
+      "main": [
+        [
+          {
+            "node": "Build Unified Agent Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Unified Agent Context": {
+      "main": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sarvam AI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guest Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Check Availability": {
+      "ai_tool": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Property Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Create Booking": {
+      "ai_tool": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Create CRM Lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Create Support Ticket": {
+      "ai_tool": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Human Handoff": {
+      "ai_tool": [
+        [
+          {
+            "node": "Bougainvilla AI Booking Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bougainvilla AI Booking Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Agent Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Agent Decision": {
+      "main": [
+        [
+          {
+            "node": "Log AI Lead Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log AI Lead Decision": {
+      "main": [
+        [
+          {
+            "node": "Send Instagram AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking Lead Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Booking Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Booking Lead": {
+      "main": [
+        [
+          {
+            "node": "PMS Availability Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PMS Availability Check": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sarvam Sales Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sarvam Sales Decision": {
+      "main": [
+        [
+          {
+            "node": "Sarvam Sales AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sarvam Sales AI": {
+      "main": [
+        [
+          {
+            "node": "Build Booking Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Booking Response": {
+      "main": [
+        [
+          {
+            "node": "Send Guest Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Guest Message": {
+      "main": [
+        [
+          {
+            "node": "Respond to Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sarvam Voice Agent Event": {
+      "main": [
+        [
+          {
+            "node": "Normalize Voice Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Voice Event": {
+      "main": [
+        [
+          {
+            "node": "Voice Triage Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Triage Prompt": {
+      "main": [
+        [
+          {
+            "node": "Sarvam Conversation AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sarvam Conversation AI": {
+      "main": [
+        [
+          {
+            "node": "Build Voice Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Voice Action": {
+      "main": [
+        [
+          {
+            "node": "Voice Needs Human",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Voice Needs Human": {
       "main": [
-        [{ "node": "Create Voice Support Ticket", "type": "main", "index": 0 }],
-        [{ "node": "Return Voice Response", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Create Voice Support Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Voice Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Create Voice Support Ticket": { "main": [[{ "node": "Return Voice Response", "type": "main", "index": 0 }]] },
-    "Return Voice Response":       { "main": [[{ "node": "Respond Voice Event", "type": "main", "index": 0 }]] },
-
-    "Follow-up Scheduler":        { "main": [[{ "node": "Fetch Follow-up Candidates", "type": "main", "index": 0 }]] },
-    "Fetch Follow-up Candidates": { "main": [[{ "node": "Build Follow-up Messages", "type": "main", "index": 0 }]] },
-    "Build Follow-up Messages":   { "main": [[{ "node": "Sarvam Follow-up Copy", "type": "main", "index": 0 }]] },
-    "Sarvam Follow-up Copy":      { "main": [[{ "node": "Prepare Follow-up Send", "type": "main", "index": 0 }]] },
-    "Prepare Follow-up Send":     { "main": [[{ "node": "Send Follow-up", "type": "main", "index": 0 }]] },
-
-    "Pricing Scheduler":        { "main": [[{ "node": "Fetch Property Metrics", "type": "main", "index": 0 }]] },
-    "Fetch Property Metrics":   { "main": [[{ "node": "Build Pricing Prompt", "type": "main", "index": 0 }]] },
-    "Build Pricing Prompt":     { "main": [[{ "node": "Sarvam Revenue AI", "type": "main", "index": 0 }]] },
-    "Sarvam Revenue AI":        { "main": [[{ "node": "Prepare Pricing Approval", "type": "main", "index": 0 }]] },
-    "Prepare Pricing Approval": { "main": [[{ "node": "Send Pricing Approval", "type": "main", "index": 0 }]] },
-
-    "Review Webhook":              { "main": [[{ "node": "Normalize Review", "type": "main", "index": 0 }]] },
-    "Normalize Review":            { "main": [[{ "node": "Build Reputation Prompt", "type": "main", "index": 0 }]] },
-    "Build Reputation Prompt":     { "main": [[{ "node": "Sarvam Review AI", "type": "main", "index": 0 }]] },
-    "Sarvam Review AI":            { "main": [[{ "node": "Prepare Reputation Actions", "type": "main", "index": 0 }]] },
-    "Prepare Reputation Actions":  { "main": [[{ "node": "Publish Review Reply", "type": "main", "index": 0 }]] },
-    "Publish Review Reply":        { "main": [[{ "node": "Notify Staff", "type": "main", "index": 0 }]] },
-    "Notify Staff":                { "main": [[{ "node": "Respond Review", "type": "main", "index": 0 }]] },
-
-    "Dashboard Metrics Webhook":   { "main": [[{ "node": "Authorize Dashboard Request", "type": "main", "index": 0 }]] },
-    "Authorize Dashboard Request": { "main": [[{ "node": "Fetch CRM Metrics", "type": "main", "index": 0 }]] },
-    "Fetch CRM Metrics":           { "main": [[{ "node": "Shape Dashboard Metrics", "type": "main", "index": 0 }]] },
-    "Shape Dashboard Metrics":     { "main": [[{ "node": "Respond Dashboard Metrics", "type": "main", "index": 0 }]] }
+    "Create Voice Support Ticket": {
+      "main": [
+        [
+          {
+            "node": "Return Voice Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return Voice Response": {
+      "main": [
+        [
+          {
+            "node": "Respond Voice Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Follow-up Scheduler": {
+      "main": [
+        [
+          {
+            "node": "Fetch Follow-up Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Follow-up Candidates": {
+      "main": [
+        [
+          {
+            "node": "Build Follow-up Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Follow-up Messages": {
+      "main": [
+        [
+          {
+            "node": "Sarvam Follow-up Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sarvam Follow-up Copy": {
+      "main": [
+        [
+          {
+            "node": "Prepare Follow-up Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Follow-up Send": {
+      "main": [
+        [
+          {
+            "node": "Send Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pricing Scheduler": {
+      "main": [
+        [
+          {
+            "node": "Fetch Property Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Property Metrics": {
+      "main": [
+        [
+          {
+            "node": "Build Pricing Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Pricing Prompt": {
+      "main": [
+        [
+          {
+            "node": "Sarvam Revenue AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sarvam Revenue AI": {
+      "main": [
+        [
+          {
+            "node": "Prepare Pricing Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Pricing Approval": {
+      "main": [
+        [
+          {
+            "node": "Send Pricing Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Review": {
+      "main": [
+        [
+          {
+            "node": "Build Reputation Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Reputation Prompt": {
+      "main": [
+        [
+          {
+            "node": "Sarvam Review AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sarvam Review AI": {
+      "main": [
+        [
+          {
+            "node": "Prepare Reputation Actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Reputation Actions": {
+      "main": [
+        [
+          {
+            "node": "Publish Review Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Review Reply": {
+      "main": [
+        [
+          {
+            "node": "Notify Staff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Staff": {
+      "main": [
+        [
+          {
+            "node": "Respond Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dashboard Metrics Webhook": {
+      "main": [
+        [
+          {
+            "node": "Authorize Dashboard Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize Dashboard Request": {
+      "main": [
+        [
+          {
+            "node": "Fetch CRM Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch CRM Metrics": {
+      "main": [
+        [
+          {
+            "node": "Shape Dashboard Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Dashboard Metrics": {
+      "main": [
+        [
+          {
+            "node": "Respond Dashboard Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Meta Webhook Verify": {
+      "main": [
+        [
+          {
+            "node": "Check Meta Verify Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "settings": { "executionOrder": "v1" },
+  "settings": {
+    "executionOrder": "v1"
+  },
   "pinData": {},
   "meta": {
     "instanceId": "0bc10d91b1b7cd5e55fd31e969206bdd154ed8698712bd6e803c1f1bfd583f32"

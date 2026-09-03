@@ -12,40 +12,38 @@ version never gets committed.
 
 ---
 
-## 1 · Meta Business — WhatsApp + Instagram + Lead Ads
+## 1 · Meta — Instagram DMs
 
-One Meta app covers all three channels. developers.facebook.com → your app.
+One Meta app, one System User token. developers.facebook.com → your app.
 
 | Variable | Where to get it |
 |---|---|
 | `META_APP_SECRET` | Settings → Basic → **App Secret** |
-| `META_VERIFY_TOKEN` | **You invent this.** Any random string. Paste the same value into Meta's "Verify token" box |
-| `META_ACCESS_TOKEN` | Business Settings → System Users → Generate token. Use a System User token, never the temporary one from the API Setup tab |
-| `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp → API Setup → "Phone number ID" (a number, not the phone number) |
+| `META_VERIFY_TOKEN` | **You invent this.** Any random string (`openssl rand -hex 16`). Paste the same value into Meta's "Verify token" box |
+| `META_ACCESS_TOKEN` | Business Settings → System Users → Generate token. A System User token, never the temporary one from the product tab |
 | `INSTAGRAM_BUSINESS_ID` | The Instagram professional account's IGSID |
 
-**Token permissions** the System User needs:
-`whatsapp_business_messaging`, `whatsapp_business_management`,
+**Token permissions** (Instagram API with Facebook Login):
 `instagram_basic`, `instagram_manage_messages`,
-`pages_show_list`, `pages_manage_metadata`, `leads_retrieval`.
+`pages_manage_metadata`, `pages_show_list`, `business_management`.
 
-**Webhook fields to subscribe:** `messages` (WhatsApp), `messages` (Instagram),
-`leadgen` (the Page, for Lead Ads).
+**Webhook fields to subscribe:** `messages`, `messaging_postbacks`.
 
-### Two things that will bite you
+Step-by-step walkthrough: **[instagram-setup.md](instagram-setup.md)**.
 
-- `META_APP_SECRET` is **required**, not optional. Every inbound Meta webhook is
+### Three things that will bite you
+
+- `META_APP_SECRET` is **required**, not optional. Every inbound webhook is
   HMAC-verified before anything is processed. Leave it unset and the workflow
-  refuses the request rather than trusting it — which is the correct behaviour
-  for a URL anyone can find.
-- **WhatsApp's 24-hour window.** Outside 24 hours of the guest's last message you
-  can only send a **pre-approved template**, not free text. The AI reply nodes
-  send free text, so they work for live conversations but will be rejected by
-  Meta for cold outreach. The 2-hourly follow-up branch goes through
-  `GUEST_MESSAGING_URL` for exactly this reason — point it at a provider that
-  sends approved templates.
-
----
+  refuses the request rather than trusting it — the correct behaviour for a URL
+  anyone can find.
+- **Instagram's 24-hour window.** Outside 24 hours of the guest's last message
+  you cannot send free text. The AI reply node sends free text, so it works for
+  live conversations but not cold outreach. The scheduled follow-up branch goes
+  through `GUEST_MESSAGING_URL` for exactly this reason.
+- **"Allow access to messages" must be ON** in the Instagram app
+  (Settings → Messages and story replies). Without it the API receives no DMs,
+  with no error anywhere.
 
 ## 2 · Sarvam AI
 

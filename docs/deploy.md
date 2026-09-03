@@ -31,30 +31,29 @@ Then:
 
 | URL | Method | Purpose |
 |---|---|---|
-| `/webhook/bougainvilla-meta` | GET | Meta verification handshake |
-| `/webhook/bougainvilla-meta` | POST | Lead Ads `leadgen` events |
-| `/webhook/bougainvilla-whatsapp` | GET / POST | verification / inbound messages |
-| `/webhook/bougainvilla-instagram` | GET / POST | verification / inbound DMs |
+| `/webhook/bougainvilla-instagram` | GET | Meta verification handshake |
+| `/webhook/bougainvilla-instagram` | POST | inbound Instagram DMs |
 | `/webhook/bougainvilla-booking-lead` | POST | website or landing-page form |
 | `/webhook/bougainvilla-voice-event` | POST | Sarvam voice agent |
 | `/webhook/bougainvilla-review` | POST | review platform |
 | `/webhook/bougainvilla-dashboard` | GET | dashboard metrics (key-protected) |
 
-Register each Meta product's callback against its own path — Meta sends a GET to
-verify each URL separately, and all three GET paths are handled.
+Register the Instagram product's callback against
+`/webhook/bougainvilla-instagram`. Meta sends a GET to that URL to verify
+ownership before it will deliver anything.
 
 ### Check it before wiring Meta
 
 ```bash
 # should print your challenge string
-curl "https://n8n.yourdomain.com/webhook/bougainvilla-whatsapp?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=test123"
+curl "https://n8n.yourdomain.com/webhook/bougainvilla-instagram?hub.mode=subscribe&hub.verify_token=YOUR_TOKEN&hub.challenge=test123"
 
 # should return 403
-curl -i "https://n8n.yourdomain.com/webhook/bougainvilla-whatsapp?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=test123"
+curl -i "https://n8n.yourdomain.com/webhook/bougainvilla-instagram?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=test123"
 
 # should be rejected — no valid signature
 curl -X POST -H 'content-type: application/json' -d '{"entry":[]}' \
-  https://n8n.yourdomain.com/webhook/bougainvilla-whatsapp
+  https://n8n.yourdomain.com/webhook/bougainvilla-instagram
 ```
 
 If the third one succeeds, `META_APP_SECRET` isn't reaching the Code node — stop

@@ -14,18 +14,19 @@ Marketing and operations workspace for Bougainvilla Resorts.
 
 ## CRM automation
 
-An n8n workflow that answers WhatsApp, Instagram DMs and Meta Lead Ads with one
-AI booking agent, checks live PMS availability before quoting anything, triages
-voice calls, sends scheduled follow-ups, proposes nightly price changes for human
-approval, and drafts review replies. A Vercel-hosted dashboard reads its numbers
-back out.
+An n8n workflow that answers Instagram DMs with an AI booking agent, checks live
+PMS availability before quoting anything, handles website booking enquiries,
+triages voice calls, sends scheduled follow-ups, proposes nightly price changes
+for human approval, and drafts review replies. A Vercel-hosted dashboard reads
+its numbers back out.
 
 Start here:
 
 1. **[docs/deploy.md](docs/deploy.md)** — get both halves running
-2. **[docs/n8n-credentials.md](docs/n8n-credentials.md)** — every secret it needs
-3. **[docs/dashboard-contract.md](docs/dashboard-contract.md)** — the JSON the CRM must return
-4. **[n8n/README.md](n8n/README.md)** — what each flow does
+2. **[docs/instagram-setup.md](docs/instagram-setup.md)** — click-by-click Meta setup
+3. **[docs/n8n-credentials.md](docs/n8n-credentials.md)** — every secret it needs
+4. **[docs/dashboard-contract.md](docs/dashboard-contract.md)** — the JSON the CRM must return
+5. **[n8n/README.md](n8n/README.md)** — what each flow does
 
 Copy `.env.example` to `.env` as your checklist. Real values go into the n8n and
 Vercel environment settings, never into the repo.

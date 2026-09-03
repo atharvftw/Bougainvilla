@@ -22,7 +22,7 @@ that tile — so a partial response degrades one number, not the page.
   "active_leads": 57,
   "revenue_mtd": 2140000,
   "avg_rating": 4.91,
-  "channels":  { "whatsapp": 44, "instagram": 26, "meta_ads": 19, "voice": 11 },
+  "channels":  { "instagram": 58, "direct": 27, "voice": 15 },
   "revenue_series": {
     "labels": ["May","Jun","Jul","Aug","Sep"],
     "values": [920000, 1140000, 1380000, 1520000, 2140000]
@@ -38,7 +38,8 @@ Notes:
 
 - `revenue_mtd` and `revenue_series.values` are **rupees**. The dashboard divides
   by 100,000 to display lakhs — don't pre-convert.
-- `channels` values are percentages and should total ~100.
+- `channels` keys are `instagram` (DMs), `direct` (website booking form) and
+  `voice` (phone). Values are percentages and should total ~100.
 - `status` maps to a colour: `confirmed`/`booked` green, `pending`/`support`
   amber, `awaiting_payment`/`enquiry` blue, `cancelled` red. Anything else
   renders blue.

@@ -9,8 +9,8 @@ Secrets: [../docs/n8n-credentials.md](../docs/n8n-credentials.md)
 
 | Trigger | What it does |
 |---|---|
-| Meta verification (GET ×3) | Answers Meta's ownership handshake on all three callback paths |
-| WhatsApp / Instagram / Lead Ads (POST) | Signature-verified → normalised → AI agent → reply on the same channel |
+| Meta verification (GET) | Answers Meta's ownership handshake on the Instagram callback URL |
+| Instagram DMs (POST) | Signature-verified → normalised → AI agent → reply in the same thread |
 | Booking lead webhook | Form lead → live PMS availability → Sarvam sales reply → guest message |
 | Voice agent webhook | Transcript → triage → ticket **only if escalation is needed** → callback |
 | Follow-up scheduler (2-hourly) | Pulls due leads → one AI message each → sends |
@@ -18,14 +18,16 @@ Secrets: [../docs/n8n-credentials.md](../docs/n8n-credentials.md)
 | Review webhook | Sentiment + drafted reply → publish → staff alert if rating ≤ 3 |
 | Dashboard webhook (GET) | Key-protected metrics for the Vercel dashboard |
 
-The three messaging channels converge on one **Bougainvilla AI Booking Agent**
-with shared memory and six tools (availability, property search, create booking,
-CRM lead, support ticket, human handoff), then fan back out by channel.
+Instagram DMs run through the **Bougainvilla AI Booking Agent** — shared
+conversation memory plus six tools (availability, property search, create
+booking, CRM lead, support ticket, human handoff) — and the reply goes back into
+the same DM thread.
 
 ## Changes from the source workflow
 
-Beyond renaming to Bougainvilla and moving webhook paths from `airbnb-*` to
-`bougainvilla-*`:
+Beyond renaming to Bougainvilla, moving webhook paths from `airbnb-*` to
+`bougainvilla-*`, and cutting the workflow down to Instagram (the WhatsApp and
+Meta Lead Ads branches are removed, not just disconnected):
 
 **Bugs that would have failed silently**
 
@@ -53,17 +55,18 @@ Beyond renaming to Bougainvilla and moving webhook paths from `airbnb-*` to
   rejected outright if `META_APP_SECRET` is unset.
 - The verify-token comparison is constant-time (was `===`).
 - Failed verification returns **403**, not a 500 stack trace.
-- Meta verifies each callback URL separately, so the WhatsApp and Instagram
-  paths now have GET handlers too — previously only the Lead Ads path did, and
-  the other two could never have been registered.
+- The Instagram path had no GET verification handler — only the Lead Ads path
+  did — so Instagram could never have been registered with Meta at all. Meta
+  GET-verifies each callback URL separately.
 - `META_ACCESS_TOKEN` moved out of the query string into an `Authorization`
   header, so it stops appearing in access logs.
 
 **Behaviour**
 
-- Channel routing is one Switch node instead of chained IFs — the original's
-  `meta_ads` branch sat on the false-output of the Instagram check, so any
-  unrecognised channel fell through into the Meta Ads path.
+- The original routed channels through chained IFs, with the `meta_ads` branch
+  sitting on the false-output of the Instagram check — so any unrecognised
+  channel fell through into the Meta Ads path. With one channel the chain is
+  gone entirely.
 - Voice calls only open a support ticket when triage actually escalates. Before,
   every call created one.
 - `STAFF_ALERT_URL` had two different fallback values in different nodes; unified.
