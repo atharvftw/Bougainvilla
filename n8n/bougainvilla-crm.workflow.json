@@ -1,0 +1,1456 @@
+{
+  "name": "Bougainvilla CRM — AI Booking & Operations",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "bougainvilla-meta",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cbc18486-04d2-4aec-875c-e6754dfb7f6a",
+      "name": "Meta Verify (Ads)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 1824],
+      "webhookId": "35460a16-fec0-4bde-bba1-05604fcc1219"
+    },
+    {
+      "parameters": {
+        "path": "bougainvilla-whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b001",
+      "name": "Meta Verify (WhatsApp)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 1968],
+      "webhookId": "6c1f2a44-9b0d-4e52-8a71-2f0c9d1e5b02"
+    },
+    {
+      "parameters": {
+        "path": "bougainvilla-instagram",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b002",
+      "name": "Meta Verify (Instagram)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 2112],
+      "webhookId": "6c1f2a44-9b0d-4e52-8a71-2f0c9d1e5b03"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Meta calls every callback URL once with GET to verify ownership.\n// Constant-time compare so the token can't be recovered by timing the response.\nconst c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst q = $json.query || {};\nconst expected = $env.META_VERIFY_TOKEN || '';\nconst token = String(q['hub.verify_token'] || '');\n\nlet ok = false;\nif (expected && q['hub.mode'] === 'subscribe' && token.length === expected.length) {\n  ok = c.timingSafeEqual(Buffer.from(token), Buffer.from(expected));\n}\n\nreturn [{ json: { verified: ok, challenge: ok ? String(q['hub.challenge'] || '') : '' } }];"
+      },
+      "id": "ce1143ad-3382-47c3-825c-8ff74832c4ff",
+      "name": "Check Meta Verify Token",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 1968]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.verified }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b004",
+      "name": "Verify Token Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [448, 1968]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.challenge }}",
+        "options": {}
+      },
+      "id": "95aa8f80-dabf-496f-8c0f-e069e43f03d8",
+      "name": "Return Challenge (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [672, 1872]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Forbidden",
+        "options": { "responseCode": 403 }
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b005",
+      "name": "Reject Verification (403)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [672, 2064]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bougainvilla-whatsapp",
+        "options": { "rawBody": true }
+      },
+      "id": "b3a102bf-25ec-4ec8-b490-ab99b46cbfd2",
+      "name": "WhatsApp Booking Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 192],
+      "webhookId": "5120592c-951d-4382-b3bd-1d7c9cf7493e"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bougainvilla-instagram",
+        "options": { "rawBody": true }
+      },
+      "id": "ccd34f32-5306-4aa6-bbd2-ed093e833384",
+      "name": "Instagram Booking Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 384],
+      "webhookId": "26482967-8e6d-4f9e-90ab-64e9566ebc43"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bougainvilla-meta",
+        "options": { "rawBody": true }
+      },
+      "id": "8ca04630-6ec9-4fd4-b30d-b6ec0f33c1c2",
+      "name": "Meta Ads Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "7f8bf8a0-fbf3-4077-997e-16a30be8ee23"
+    },
+
+    {
+      "parameters": {
+        "jsCode": "// Meta signs every webhook POST with HMAC-SHA256 over the RAW body.\n// Without this check anyone who learns the URL can inject fake bookings.\n// Requires: webhook node option \"Raw Body\" = on, and NODE_FUNCTION_ALLOW_BUILTIN=crypto\nconst c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst secret = $env.META_APP_SECRET || '';\nif (!secret) throw new Error('META_APP_SECRET is not set - refusing to process an unverified Meta webhook');\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hub-signature-256'] || '');\n\nconst b64 = item.binary && item.binary.data && item.binary.data.data;\nif (!b64) throw new Error('Raw body missing - enable the \"Raw Body\" option on the webhook node');\nconst raw = Buffer.from(b64, 'base64');\n\nconst expected = 'sha256=' + c.createHmac('sha256', secret).update(raw).digest('hex');\nconst a = Buffer.from(signature);\nconst b = Buffer.from(expected);\nif (a.length !== b.length || !c.timingSafeEqual(a, b)) {\n  throw new Error('Invalid X-Hub-Signature-256 - rejecting webhook');\n}\n\nreturn [{ json: { headers, body: JSON.parse(raw.toString('utf8')) } }];"
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b010",
+      "name": "Verify WhatsApp Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 192]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst secret = $env.META_APP_SECRET || '';\nif (!secret) throw new Error('META_APP_SECRET is not set - refusing to process an unverified Meta webhook');\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hub-signature-256'] || '');\n\nconst b64 = item.binary && item.binary.data && item.binary.data.data;\nif (!b64) throw new Error('Raw body missing - enable the \"Raw Body\" option on the webhook node');\nconst raw = Buffer.from(b64, 'base64');\n\nconst expected = 'sha256=' + c.createHmac('sha256', secret).update(raw).digest('hex');\nconst a = Buffer.from(signature);\nconst b = Buffer.from(expected);\nif (a.length !== b.length || !c.timingSafeEqual(a, b)) {\n  throw new Error('Invalid X-Hub-Signature-256 - rejecting webhook');\n}\n\nreturn [{ json: { headers, body: JSON.parse(raw.toString('utf8')) } }];"
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b011",
+      "name": "Verify Instagram Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 384]
+    },
+    {
+      "parameters": {
+        "jsCode": "const c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst secret = $env.META_APP_SECRET || '';\nif (!secret) throw new Error('META_APP_SECRET is not set - refusing to process an unverified Meta webhook');\n\nconst item = $input.first();\nconst headers = item.json.headers || {};\nconst signature = String(headers['x-hub-signature-256'] || '');\n\nconst b64 = item.binary && item.binary.data && item.binary.data.data;\nif (!b64) throw new Error('Raw body missing - enable the \"Raw Body\" option on the webhook node');\nconst raw = Buffer.from(b64, 'base64');\n\nconst expected = 'sha256=' + c.createHmac('sha256', secret).update(raw).digest('hex');\nconst a = Buffer.from(signature);\nconst b = Buffer.from(expected);\nif (a.length !== b.length || !c.timingSafeEqual(a, b)) {\n  throw new Error('Invalid X-Hub-Signature-256 - rejecting webhook');\n}\n\nreturn [{ json: { headers, body: JSON.parse(raw.toString('utf8')) } }];"
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b012",
+      "name": "Verify Meta Ads Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 0]
+    },
+
+    {
+      "parameters": {
+        "jsCode": "const b=$json.body||$json,v=b.entry?.[0]?.changes?.[0]?.value||{},m=v.messages?.[0]||{},c=v.contacts?.[0]||{}; const t=m.text?.body||m.button?.text||m.interactive?.button_reply?.title||m.interactive?.list_reply?.title||''; return [{json:{channel:'whatsapp',senderId:m.from||c.wa_id||'',recipientId:v.metadata?.phone_number_id||'',messageId:m.id||'',text:String(t||''),sessionId:`whatsapp:${m.from||c.wa_id||''}`,raw:b}}];"
+      },
+      "id": "70892a6e-2a81-4871-b8fa-ba0579b67f98",
+      "name": "Normalize WhatsApp Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, 192]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b=$json.body||$json,e=b.entry?.[0]||{},m=e.messaging?.[0]||b.messaging?.[0]||{},msg=m.message||{}; return [{json:{channel:'instagram',senderId:m.sender?.id||'',recipientId:m.recipient?.id||'',messageId:msg.mid||'',text:String(msg.text||msg.quick_reply?.payload||''),sessionId:`instagram:${m.sender?.id||''}`,raw:b}}];"
+      },
+      "id": "c5b47a6d-f4b1-4218-bc82-48678d94d091",
+      "name": "Normalize Instagram Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, 384]
+    },
+    {
+      "parameters": {
+        "jsCode": "const b=$json.body||$json,v=b.entry?.[0]?.changes?.[0]?.value||{},id=v.leadgen_id||b.leadgen_id||''; return [{json:{channel:'meta_ads',leadgenId:id,pageId:v.page_id||b.page_id||'',formId:v.form_id||b.form_id||'',sessionId:`meta_ads:${id}`,text:'New Meta Ads lead. Retrieve lead details and qualify for a property booking.',raw:b}}];"
+      },
+      "id": "20650dd4-2989-4cac-94e5-77c31a71ca31",
+      "name": "Normalize Meta Ads Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'https://graph.facebook.com/v23.0/' + $json.leadgenId }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "fields", "value": "field_data,created_time,ad_id,form_id" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "88fbe2bd-0b09-4897-a1e9-6b90b3efa3ed",
+      "name": "Fetch Meta Lead Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [672, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base=$('Normalize Meta Ads Lead').first().json,d=$json,fields={}; for(const f of (d.field_data||[]))fields[f.name]=(f.values||[])[0]??''; return [{json:{...base,lead:{...fields,created_time:d.created_time||'',ad_id:d.ad_id||''},text:`Meta Ads lead details: ${JSON.stringify(fields)}. Qualify this guest and move toward a reservation.`}}];"
+      },
+      "id": "11fa2d7d-a611-4ff0-b966-fe6618a3b4de",
+      "name": "Prepare Meta Lead For Agent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [896, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const j=$json,c={channel:j.channel,senderId:j.senderId||'',recipientId:j.recipientId||'',sessionId:j.sessionId||'',messageId:j.messageId||'',lead:j.lead||null,userMessage:String(j.text||'').trim()}; return [{json:{...j,agentPrompt:`You are the Bougainvilla Booking AI Agent. Act as sales, concierge and support for Bougainvilla Resorts. Use tools for live data/actions; never invent availability, prices, booking IDs, policies or amenities. Convert qualified enquiries into confirmed bookings. Channel=${j.channel}. Guest context=${JSON.stringify(c)}. Return ONLY valid JSON with keys intent,reply,booking_status,lead_stage,needs_human,property_id,check_in,check_out,guests,booking_id. booking_status=enquiry|availability_checked|awaiting_payment|booked|support|cancelled. For booking: check availability first; create booking only after explicit confirmation and complete required details. Use only payment links returned by tools. Escalate refunds, emergencies, policy exceptions, uncertainty.`}}];"
+      },
+      "id": "9aedb39d-961c-49de-8c01-2a562efb4a97",
+      "name": "Build Unified Agent Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 192]
+    },
+    {
+      "parameters": {
+        "model": { "__rl": true, "mode": "id", "value": "sarvam-105b" },
+        "options": { "maxTokens": 900, "temperature": 0.2 }
+      },
+      "id": "fd8916ab-04f8-4dbc-ab9f-11cf8bd412da",
+      "name": "Sarvam AI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [1088, 416],
+      "credentials": {
+        "openAiApi": { "id": "REPLACE_ME", "name": "Sarvam AI (OpenAI-compatible)" }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.agentPrompt }}",
+        "options": {
+          "systemMessage": "You are the central Bougainvilla AI Booking Agent. You understand Hindi, Hinglish, Marathi, English and other Indian languages. Use tools instead of guessing. Never expose internal APIs. Always return the JSON schema requested by the user prompt.",
+          "maxIterations": 8,
+          "returnIntermediateSteps": false
+        }
+      },
+      "id": "e32e0821-75e5-4984-8d50-b9f79f9b9999",
+      "name": "Bougainvilla AI Booking Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [1504, 192]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId || ('guest:' + ($json.senderId || $json.leadgenId || 'unknown')) }}",
+        "contextWindowLength": 12
+      },
+      "id": "e1701f0f-67ec-4f4b-adf0-6b11ab980c3f",
+      "name": "Guest Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [1248, 416]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Check live availability and price before promising anything.",
+        "method": "POST",
+        "url": "={{ $env.PMS_AVAILABILITY_URL || 'https://example.invalid/pms/availability' }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Authorization",
+              "valueProvider": "fieldValue",
+              "value": "={{ 'Bearer ' + ($env.PMS_API_KEY || '') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "model",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "property_id", "description": "Optional property ID", "type": "string" },
+            { "name": "check_in", "description": "Check-in YYYY-MM-DD", "type": "string" },
+            { "name": "check_out", "description": "Check-out YYYY-MM-DD", "type": "string" },
+            { "name": "guests", "description": "Guest count", "type": "number" }
+          ]
+        },
+        "optimizeResponse": true,
+        "dataField": "data"
+      },
+      "id": "2af5ace0-9a3c-4fba-9e2c-2d64a2c631d7",
+      "name": "Tool - Check Availability",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1376, 416]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search matching properties by dates, guests, budget and preferences.",
+        "method": "POST",
+        "url": "={{ $env.PMS_PROPERTY_SEARCH_URL || 'https://example.invalid/pms/properties/search' }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Authorization",
+              "valueProvider": "fieldValue",
+              "value": "={{ 'Bearer ' + ($env.PMS_API_KEY || '') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "model",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "check_in", "description": "Check-in date", "type": "string" },
+            { "name": "check_out", "description": "Check-out date", "type": "string" },
+            { "name": "guests", "description": "Guest count", "type": "number" },
+            { "name": "budget", "description": "Budget", "type": "number" },
+            { "name": "preferences", "description": "Location/amenities", "type": "string" }
+          ]
+        },
+        "optimizeResponse": true,
+        "dataField": "data"
+      },
+      "id": "9a9452a7-f3c1-4e8f-9556-3351478a1ec4",
+      "name": "Tool - Property Search",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1504, 416]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Create a reservation only after explicit guest confirmation and complete details.",
+        "method": "POST",
+        "url": "={{ $env.PMS_BOOKING_URL || 'https://example.invalid/pms/bookings' }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Authorization",
+              "valueProvider": "fieldValue",
+              "value": "={{ 'Bearer ' + ($env.PMS_API_KEY || '') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "model",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "property_id", "description": "Selected property", "type": "string" },
+            { "name": "check_in", "description": "Check-in", "type": "string" },
+            { "name": "check_out", "description": "Check-out", "type": "string" },
+            { "name": "guests", "description": "Guest count", "type": "number" },
+            { "name": "guest_name", "description": "Guest name", "type": "string" },
+            { "name": "guest_phone", "description": "Guest phone", "type": "string" },
+            { "name": "guest_email", "description": "Guest email optional", "type": "string" }
+          ]
+        },
+        "optimizeResponse": true,
+        "dataField": "data"
+      },
+      "id": "025fa7c7-b255-4f6a-b447-cbe2375a81f1",
+      "name": "Tool - Create Booking",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1632, 416]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Create/update the CRM lead and booking stage.",
+        "method": "POST",
+        "url": "={{ $env.CRM_LEAD_URL || 'https://example.invalid/crm/leads' }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Authorization",
+              "valueProvider": "fieldValue",
+              "value": "={{ 'Bearer ' + ($env.CRM_API_KEY || '') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "model",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "channel", "description": "Source channel", "type": "string" },
+            { "name": "name", "description": "Guest name", "type": "string" },
+            { "name": "phone", "description": "Guest phone", "type": "string" },
+            { "name": "message", "description": "Latest message", "type": "string" },
+            { "name": "lead_stage", "description": "Lead stage", "type": "string" }
+          ]
+        },
+        "optimizeResponse": true,
+        "dataField": "data"
+      },
+      "id": "dd305d34-b4a8-4906-a879-65893cf4df68",
+      "name": "Tool - Create CRM Lead",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1824, 416]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Create an operational support ticket for issues needing staff.",
+        "method": "POST",
+        "url": "={{ $env.SUPPORT_TICKET_URL || 'https://example.invalid/support/tickets' }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Authorization",
+              "valueProvider": "fieldValue",
+              "value": "={{ 'Bearer ' + ($env.SUPPORT_API_KEY || '') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "model",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "guest_id", "description": "Guest ID", "type": "string" },
+            { "name": "issue", "description": "Issue", "type": "string" },
+            { "name": "priority", "description": "Priority", "type": "string" },
+            { "name": "channel", "description": "Channel", "type": "string" }
+          ]
+        },
+        "optimizeResponse": true,
+        "dataField": "data"
+      },
+      "id": "ed2cff3c-3de5-4e57-9742-1417cd36f619",
+      "name": "Tool - Create Support Ticket",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [1952, 416]
+    },
+    {
+      "parameters": {
+        "toolDescription": "Escalate to a human host/manager for refunds, emergencies, exceptions or uncertainty.",
+        "method": "POST",
+        "url": "={{ $env.HUMAN_HANDOFF_URL || 'https://example.invalid/handoff' }}",
+        "sendHeaders": true,
+        "parametersHeaders": {
+          "values": [
+            {
+              "name": "Authorization",
+              "valueProvider": "fieldValue",
+              "value": "={{ 'Bearer ' + ($env.SUPPORT_API_KEY || '') }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "model",
+        "placeholderDefinitions": {
+          "values": [
+            { "name": "guest_id", "description": "Guest ID", "type": "string" },
+            { "name": "reason", "description": "Reason", "type": "string" },
+            { "name": "priority", "description": "Priority", "type": "string" },
+            { "name": "summary", "description": "Summary", "type": "string" }
+          ]
+        },
+        "optimizeResponse": true,
+        "dataField": "data"
+      },
+      "id": "be99e6ff-e744-4b1c-b9f0-6566271e70ad",
+      "name": "Tool - Human Handoff",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [2160, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw=String($json.output||$json.text||'').trim();let d;try{d=JSON.parse(raw)}catch(e){const m=raw.match(/\\{[\\s\\S]*\\}/);if(m){try{d=JSON.parse(m[0])}catch(_){}}}if(!d)d={intent:'support',reply:raw||'Sorry, I could not process that request.',booking_status:'support',lead_stage:'needs_human',needs_human:true};const o=$('Build Unified Agent Context').first().json;return [{json:{...o,...d,reply:String(d.reply||''),channel:o.channel,senderId:o.senderId||'',recipientId:o.recipientId||'',sessionId:o.sessionId||''}}];"
+      },
+      "id": "ee67d13c-ec72-4e08-802b-38b47d41a050",
+      "name": "Parse AI Agent Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2224, 192]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.CRM_LEAD_URL || 'https://example.invalid/crm/leads' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.CRM_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({channel:$json.channel,guest_id:$json.senderId||$json.leadgenId,name:$json.lead?.name||'',phone:$json.lead?.phone||$json.senderId||'',message:$json.text||'',intent:$json.intent,lead_stage:$json.lead_stage,booking_status:$json.booking_status,property_id:$json.property_id||'',booking_id:$json.booking_id||''}) }}",
+        "options": {}
+      },
+      "id": "045cc0f4-ae99-48f9-8407-800955c97da7",
+      "name": "Log AI Lead Decision",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2448, 192]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.channel }}",
+                    "rightValue": "whatsapp",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "whatsapp"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.channel }}",
+                    "rightValue": "instagram",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "instagram"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.channel }}",
+                    "rightValue": "meta_ads",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "outputKey": "meta_ads"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f918e320-57e6-4514-83d3-b116346b63dc",
+      "name": "Route By Channel",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [2672, 192]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v23.0/' + ($env.WHATSAPP_PHONE_NUMBER_ID || '') + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({messaging_product:'whatsapp',to:$json.senderId,type:'text',text:{preview_url:false,body:$json.reply}}) }}",
+        "options": {}
+      },
+      "id": "a3236387-1228-4f39-88f5-d1dec10bebc7",
+      "name": "Send WhatsApp AI Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2896, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v23.0/' + ($env.INSTAGRAM_BUSINESS_ID || $json.recipientId || '') + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({recipient:{id:$json.senderId},message:{text:$json.reply}}) }}",
+        "options": {}
+      },
+      "id": "22e9340f-1225-4b9d-97c9-bd52d6dff566",
+      "name": "Send Instagram AI Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2896, 192]
+    },
+    {
+      "parameters": {
+        "jsCode": "const phone=$json.lead?.phone||$json.lead?.whatsapp||'';return [{json:{...$json,leadPhone:String(phone).replace(/[^0-9]/g,''),metaLeadReply:$json.reply}}];"
+      },
+      "id": "b6080108-b38b-488d-b9ed-7b8751697371",
+      "name": "Prepare Meta Ads Lead Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2896, 384]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.leadPhone }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d9f7a5f4-b370-4891-853d-ec2c2850c95b",
+      "name": "Meta Lead Has WhatsApp",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3120, 384]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://graph.facebook.com/v23.0/' + ($env.WHATSAPP_PHONE_NUMBER_ID || '') + '/messages' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.META_ACCESS_TOKEN || '' }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({messaging_product:'whatsapp',to:$json.leadPhone,type:'text',text:{preview_url:false,body:$json.metaLeadReply}}) }}",
+        "options": {}
+      },
+      "id": "9f9001fb-6d7c-42eb-b897-fb890da62f96",
+      "name": "Send Meta Lead WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3344, 288]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.STAFF_ALERT_URL || 'https://example.invalid/staff/alert' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.STAFF_ALERT_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({source:'meta_ads',leadgen_id:$json.leadgenId,reply:$json.reply,lead:$json.lead||{}}) }}",
+        "options": {}
+      },
+      "id": "2da4514b-7ed2-480a-b5d0-554b56347dcf",
+      "name": "Notify Team For Meta Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3344, 480]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bougainvilla-booking-lead",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0483674d-7dcb-4493-9414-77ddb43e377d",
+      "name": "Booking Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 704],
+      "webhookId": "aa02aefa-a81e-41fe-849b-718c1f847fd6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json.body ?? $input.first().json;\nreturn [{json:{\n event:\"booking_lead\",\n lead_id:x.lead_id||x.id||`lead_${Date.now()}`,\n guest_name:x.guest_name||x.name||\"Guest\",\n phone:x.phone||null,email:x.email||null,\n check_in:x.check_in||null,check_out:x.check_out||null,\n guests:Number(x.guests||1),budget:x.budget??null,\n message:x.message||\"\",\n property_id:x.property_id||null,\n source:x.source||\"unknown\",\n raw:x\n}}];"
+      },
+      "id": "ea11e81d-0f92-4488-8a83-f6c6f3519c2a",
+      "name": "Normalize Booking Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 704]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PMS_AVAILABILITY_URL || 'https://example.invalid/pms/availability' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.PMS_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({property_id:$json.property_id,check_in:$json.check_in,check_out:$json.check_out,guests:$json.guests}) }}",
+        "options": {}
+      },
+      "id": "d06559bc-fd9f-4a23-8270-75ae239ee22b",
+      "name": "PMS Availability Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [448, 704]
+    },
+    {
+      "parameters": {
+        "jsCode": "const input=$input.first().json; const p=input.body ?? input;\nconst lead=$('Normalize Booking Lead').first().json;\nreturn [{json:{lead,pms:p, prompt:`You are a Bougainvilla vacation-rental sales agent. Return STRICT JSON with keys decision,reply,alternative_request. Guest: ${lead.guest_name}. Dates: ${lead.check_in} to ${lead.check_out}. Guests: ${lead.guests}. Budget: ${lead.budget}. Message: ${lead.message}. Availability data: ${JSON.stringify(p)}. If available, be concise and move toward booking. Never invent price or availability. If unavailable, ask for alternative dates or property.`}}];"
+      },
+      "id": "b900edd0-d31f-4a40-91ac-b6d51c7e55aa",
+      "name": "Prepare Sarvam Sales Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [672, 704]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.2}) }}",
+        "options": {}
+      },
+      "id": "50130bd0-93ea-4ae2-bdd3-3d794d026f56",
+      "name": "Sarvam Sales AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [896, 704]
+    },
+    {
+      "parameters": {
+        "jsCode": "const r=$input.first().json; let c=r.choices?.[0]?.message?.content||\"{}\"; let a; try{a=JSON.parse(c)}catch(e){a={decision:\"human_review\",reply:c,alternative_request:null}};\nconst lead=$('Normalize Booking Lead').first().json;\nreturn [{json:{ok:true,event:\"booking_lead_processed\",lead_id:lead.lead_id,guest_phone:lead.phone,decision:a.decision,reply:a.reply,alternative_request:a.alternative_request,requires_human:a.decision===\"human_review\"}}];"
+      },
+      "id": "d7bc5da9-20c9-4d2d-a111-0c3bffae6b3d",
+      "name": "Build Booking Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 704]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GUEST_MESSAGING_URL || 'https://example.invalid/messaging/send' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({to:$json.guest_phone,message:$json.reply,lead_id:$json.lead_id}) }}",
+        "options": {}
+      },
+      "id": "db8be722-4dba-47c9-a891-38b0da5771f5",
+      "name": "Send Guest Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1344, 704]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($('Build Booking Response').item.json) }}",
+        "options": {}
+      },
+      "id": "68d166dd-7bc5-4208-819a-e4e0df28b799",
+      "name": "Respond to Lead",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1568, 704]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bougainvilla-voice-event",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "557aa256-2cc2-4651-bae5-03fd58eb9eb5",
+      "name": "Sarvam Voice Agent Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 928],
+      "webhookId": "39e3585d-bced-4751-8678-c62504168c24"
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json.body ?? $input.first().json;\nreturn [{json:{call_id:x.call_id||x.id||`call_${Date.now()}`,guest_phone:x.phone||x.from||null,transcript:x.transcript||x.text||\"\",intent:x.intent||\"unknown\",property_id:x.property_id||null,priority:x.priority||\"normal\",raw:x}}];"
+      },
+      "id": "de09b80a-7336-4c83-bc4e-7bbafd671776",
+      "name": "Normalize Voice Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 928]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json;\nreturn [{json:{...x,prompt:`Classify this Bougainvilla guest call. Return STRICT JSON keys intent,priority,reply,needs_human. Never invent policy. Transcript: ${x.transcript}`}}];"
+      },
+      "id": "c960655d-71ff-4469-b146-9f4e075ed776",
+      "name": "Voice Triage Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, 928]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:\"sarvam-105b-conversations\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.2}) }}",
+        "options": {}
+      },
+      "id": "8dca3dd1-e43b-4a51-bfd7-afc491485f05",
+      "name": "Sarvam Conversation AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [672, 928]
+    },
+    {
+      "parameters": {
+        "jsCode": "let c=$input.first().json.choices?.[0]?.message?.content||\"{}\";let a;try{a=JSON.parse(c)}catch(e){a={intent:\"unknown\",priority:\"high\",reply:c,needs_human:true}};\nconst x=$('Normalize Voice Event').first().json;\nreturn [{json:{...x,ai:a,escalate:Boolean(a.needs_human)||a.priority===\"urgent\"}}];"
+      },
+      "id": "f781d298-ff69-4f2c-890b-46d17fd2d766",
+      "name": "Build Voice Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [896, 928]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.escalate }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b020",
+      "name": "Voice Needs Human",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1120, 928]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPPORT_TICKET_URL || 'https://example.invalid/support/tickets' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPPORT_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({call_id:$json.call_id,guest_phone:$json.guest_phone,property_id:$json.property_id,intent:$json.ai.intent,priority:$json.ai.priority,transcript:$json.transcript}) }}",
+        "options": {}
+      },
+      "id": "7d3bb18f-453d-446c-b151-b20afdd7cbca",
+      "name": "Create Voice Support Ticket",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1344, 832]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SARVAM_AGENT_CALLBACK_URL || 'https://example.invalid/sarvam/callback' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.SARVAM_AGENT_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({call_id:$('Build Voice Action').item.json.call_id,reply:$('Build Voice Action').item.json.ai.reply,escalate:$('Build Voice Action').item.json.escalate}) }}",
+        "options": {}
+      },
+      "id": "294f8b72-9d34-407d-9ccb-f2f4e7b69c37",
+      "name": "Return Voice Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1568, 928]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ok:true,call_id:$('Build Voice Action').item.json.call_id,reply:$('Build Voice Action').item.json.ai.reply,escalate:$('Build Voice Action').item.json.escalate}) }}",
+        "options": {}
+      },
+      "id": "4d4f0f51-23b8-4b59-88a6-a4b9a072b809",
+      "name": "Respond Voice Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1792, 928]
+    },
+
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 */2 * * *" }] }
+      },
+      "id": "900b8bf3-a164-4549-b851-6846162d1c9a",
+      "name": "Follow-up Scheduler",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 1152]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CRM_FOLLOWUP_URL || 'https://example.invalid/crm/followups' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.CRM_API_KEY || '' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "17989e4a-60d8-4757-8cef-168032749bff",
+      "name": "Fetch Follow-up Candidates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [224, 1152]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data=$input.first().json; const rows=Array.isArray(data)?data:(data.leads||data.data||[]);\nreturn rows.map(x=>({json:{lead_id:x.lead_id||x.id,phone:x.phone,message_context:x.message_context||x.last_message||\"\",property_id:x.property_id||null,dates:x.dates||null,price:x.price??null,prompt:`Write one concise follow-up for a Bougainvilla vacation-rental lead. Do not invent availability, urgency, discounts, or price. Context: ${x.message_context||\"\"}. Dates: ${JSON.stringify(x.dates||null)}. Price: ${x.price??\"unknown\"}.`}}));"
+      },
+      "id": "979ba4b3-485e-410c-bf65-d7f3681b316b",
+      "name": "Build Follow-up Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, 1152]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only the message text.\"},{role:\"user\",content:$json.prompt}],temperature:0.3}) }}",
+        "options": {}
+      },
+      "id": "5b978cbb-5033-48eb-a351-31a5c759db49",
+      "name": "Sarvam Follow-up Copy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [672, 1152]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Runs per item: each lead keeps its own AI copy.\nconst src = $('Build Follow-up Messages').item.json;\nconst text = $json.choices?.[0]?.message?.content;\nreturn { json: { lead_id: src.lead_id, phone: src.phone, message: text || 'Hi! Just checking if you still need help with your stay at Bougainvilla.' } };"
+      },
+      "id": "fb3d7254-06f0-4c78-873d-f28ba217ef73",
+      "name": "Prepare Follow-up Send",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [896, 1152]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GUEST_MESSAGING_URL || 'https://example.invalid/messaging/send' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.MESSAGING_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({to:$json.phone,message:$json.message,lead_id:$json.lead_id}) }}",
+        "options": {}
+      },
+      "id": "ad9c18b5-35a9-4b1c-8a42-96adf907be91",
+      "name": "Send Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 1152]
+    },
+
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "15 5 * * *" }] }
+      },
+      "id": "78e8e821-f861-4553-828c-60c5fd314542",
+      "name": "Pricing Scheduler",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 1376]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.PMS_PRICING_DATA_URL || 'https://example.invalid/pms/pricing-data' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.PMS_API_KEY || '' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ec52bd0a-a6a9-49c7-8d63-b260bea69fce",
+      "name": "Fetch Property Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [224, 1376]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d=$input.first().json; const rows=Array.isArray(d)?d:(d.properties||d.data||[]);\nreturn rows.map(x=>({json:{property_id:x.property_id||x.id,current_price:x.current_price,occupancy:x.occupancy,upcoming_bookings:x.upcoming_bookings||[],local_events:x.local_events||[],comps:x.comps||[],prompt:`Act as a vacation-rental revenue analyst for Bougainvilla. Return STRICT JSON keys recommended_price,reason,confidence,action. Only recommend a price if current data supports it; never invent competitor prices. Data: ${JSON.stringify(x)}`}}));"
+      },
+      "id": "3909015a-345b-415a-81b9-18d9a318cee3",
+      "name": "Build Pricing Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, 1376]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.1}) }}",
+        "options": {}
+      },
+      "id": "11f70dff-ce28-4e38-9944-782fd201ebe8",
+      "name": "Sarvam Revenue AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [672, 1376]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Runs per item: each property keeps its own recommendation.\nconst src = $('Build Pricing Prompt').item.json;\nlet a;\ntry { a = JSON.parse($json.choices?.[0]?.message?.content || '{}'); }\ncatch (e) { a = { recommended_price: null, reason: 'AI parse failure', confidence: 0, action: 'human_review' }; }\nreturn { json: { property_id: src.property_id, current_price: src.current_price, recommendation: a, requires_approval: true } };"
+      },
+      "id": "25f70a65-dc4e-4c49-92b6-b5a3ed206b8b",
+      "name": "Prepare Pricing Approval",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [896, 1376]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PRICING_APPROVAL_URL || 'https://example.invalid/pricing/approval' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.APPROVAL_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "da77ba86-4691-4433-94c7-aee7c7c59d53",
+      "name": "Send Pricing Approval",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 1376]
+    },
+
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bougainvilla-review",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "81c77497-1f67-4600-9c7e-0f925534fbc3",
+      "name": "Review Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 1600],
+      "webhookId": "f509d0da-7f4f-4af6-86b7-264069c63f26"
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json.body ?? $input.first().json;\nreturn [{json:{review_id:x.review_id||x.id||`review_${Date.now()}`,property_id:x.property_id||null,guest_name:x.guest_name||\"Guest\",rating:Number(x.rating||0),review:x.review||x.text||\"\",source:x.source||\"airbnb\"}}];"
+      },
+      "id": "ba6334b9-834c-404b-a56e-7f3298a3bb3f",
+      "name": "Normalize Review",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 1600]
+    },
+    {
+      "parameters": {
+        "jsCode": "const x=$input.first().json; return [{json:{...x,prompt:`Analyze this Bougainvilla stay review. Return STRICT JSON keys sentiment,issues,praise,reply,staff_action. Be professional, never argue, never admit liability, and do not expose private guest data. Rating: ${x.rating}. Review: ${x.review}`}}];"
+      },
+      "id": "2693a26f-22c2-4bd3-9d62-fbfc6faf5ff8",
+      "name": "Build Reputation Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [448, 1600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "api-subscription-key", "value": "={{ $env.SARVAM_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"Return only valid JSON.\"},{role:\"user\",content:$json.prompt}],temperature:0.2}) }}",
+        "options": {}
+      },
+      "id": "6be7177f-68a7-4fce-ba12-a618ab580ee1",
+      "name": "Sarvam Review AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [672, 1600]
+    },
+    {
+      "parameters": {
+        "jsCode": "let c=$input.first().json.choices?.[0]?.message?.content||\"{}\";let a;try{a=JSON.parse(c)}catch(e){a={sentiment:\"unknown\",issues:[\"parse_failure\"],praise:[],reply:c,staff_action:\"human_review\"}};\nconst x=$('Normalize Review').first().json; return [{json:{...x,ai:a,needs_staff_review:x.rating<=3||a.staff_action===\"human_review\"}}];"
+      },
+      "id": "451e0a75-e565-40ea-bf27-5dd0cc46ebce",
+      "name": "Prepare Reputation Actions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [896, 1600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.REVIEW_REPLY_URL || 'https://example.invalid/reviews/reply' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.REVIEW_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({review_id:$json.review_id,reply:$json.ai.reply,property_id:$json.property_id}) }}",
+        "options": {}
+      },
+      "id": "5ce97a0f-d76d-4a6d-bc93-8c2e165e1199",
+      "name": "Publish Review Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 1600]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.STAFF_ALERT_URL || 'https://example.invalid/staff/alert' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.STAFF_ALERT_API_KEY || '' }}" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({review_id:$('Prepare Reputation Actions').item.json.review_id,property_id:$('Prepare Reputation Actions').item.json.property_id,needs_staff_review:$('Prepare Reputation Actions').item.json.needs_staff_review,issues:$('Prepare Reputation Actions').item.json.ai.issues,staff_action:$('Prepare Reputation Actions').item.json.ai.staff_action}) }}",
+        "options": {}
+      },
+      "id": "18087feb-6e8e-431c-88e0-65da04a4663d",
+      "name": "Notify Staff",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1344, 1600]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ok:true,review_id:$('Prepare Reputation Actions').item.json.review_id,needs_staff_review:$('Prepare Reputation Actions').item.json.needs_staff_review}) }}",
+        "options": {}
+      },
+      "id": "42cace21-3e1c-4206-ad46-9a09fc5732fc",
+      "name": "Respond Review",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1568, 1600]
+    },
+
+    {
+      "parameters": {
+        "path": "bougainvilla-dashboard",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b030",
+      "name": "Dashboard Metrics Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 2304],
+      "webhookId": "b7f2c9a1-0e53-4d88-91aa-3c6e2d40f701"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The Vercel serverless function is the only caller. It holds the shared key\n// server-side so the browser never sees it.\nconst c = typeof crypto !== 'undefined' && crypto.createHmac ? crypto : require('crypto');\nconst expected = $env.DASHBOARD_API_KEY || '';\nif (!expected) throw new Error('DASHBOARD_API_KEY is not set - refusing to serve metrics');\n\nconst got = String(($json.headers || {})['x-api-key'] || '');\nif (got.length !== expected.length || !c.timingSafeEqual(Buffer.from(got), Buffer.from(expected))) {\n  throw new Error('Unauthorized dashboard request');\n}\nreturn [{ json: { authorized: true } }];"
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b031",
+      "name": "Authorize Dashboard Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [224, 2304]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.CRM_METRICS_URL || 'https://example.invalid/crm/metrics' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.CRM_API_KEY || '' }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b032",
+      "name": "Fetch CRM Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [448, 2304],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Shapes whatever the CRM returns into the contract the dashboard reads.\n// If the CRM is unreachable the dashboard is told so and keeps its demo numbers.\nconst r = $json || {};\nconst failed = !!r.error || Object.keys(r).length === 0;\nconst src = r.data || r;\nconst num = (v, d = null) => (typeof v === 'number' && isFinite(v) ? v : d);\n\nreturn [{ json: {\n  generated_at: new Date().toISOString(),\n  source: failed ? 'unavailable' : 'crm',\n  stats: {\n    total_bookings: num(src.total_bookings),\n    active_leads:   num(src.active_leads),\n    revenue_mtd:    num(src.revenue_mtd),\n    avg_rating:     num(src.avg_rating)\n  },\n  channels: {\n    whatsapp:  num(src.channels?.whatsapp),\n    instagram: num(src.channels?.instagram),\n    meta_ads:  num(src.channels?.meta_ads),\n    voice:     num(src.channels?.voice)\n  },\n  revenue_series: {\n    labels: Array.isArray(src.revenue_series?.labels) ? src.revenue_series.labels : null,\n    values: Array.isArray(src.revenue_series?.values) ? src.revenue_series.values : null\n  },\n  recent_bookings: Array.isArray(src.recent_bookings) ? src.recent_bookings.slice(0, 8) : null,\n  recent_leads:    Array.isArray(src.recent_leads)    ? src.recent_leads.slice(0, 8)    : null\n} }];"
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b033",
+      "name": "Shape Dashboard Metrics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [672, 2304]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b034",
+      "name": "Respond Dashboard Metrics",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [896, 2304]
+    }
+  ],
+  "connections": {
+    "Meta Verify (Ads)":       { "main": [[{ "node": "Check Meta Verify Token", "type": "main", "index": 0 }]] },
+    "Meta Verify (WhatsApp)":  { "main": [[{ "node": "Check Meta Verify Token", "type": "main", "index": 0 }]] },
+    "Meta Verify (Instagram)": { "main": [[{ "node": "Check Meta Verify Token", "type": "main", "index": 0 }]] },
+    "Check Meta Verify Token": { "main": [[{ "node": "Verify Token Valid", "type": "main", "index": 0 }]] },
+    "Verify Token Valid": {
+      "main": [
+        [{ "node": "Return Challenge (200)", "type": "main", "index": 0 }],
+        [{ "node": "Reject Verification (403)", "type": "main", "index": 0 }]
+      ]
+    },
+
+    "WhatsApp Booking Webhook":  { "main": [[{ "node": "Verify WhatsApp Signature", "type": "main", "index": 0 }]] },
+    "Instagram Booking Webhook": { "main": [[{ "node": "Verify Instagram Signature", "type": "main", "index": 0 }]] },
+    "Meta Ads Lead Webhook":     { "main": [[{ "node": "Verify Meta Ads Signature", "type": "main", "index": 0 }]] },
+
+    "Verify WhatsApp Signature":  { "main": [[{ "node": "Normalize WhatsApp Event", "type": "main", "index": 0 }]] },
+    "Verify Instagram Signature": { "main": [[{ "node": "Normalize Instagram Event", "type": "main", "index": 0 }]] },
+    "Verify Meta Ads Signature":  { "main": [[{ "node": "Normalize Meta Ads Lead", "type": "main", "index": 0 }]] },
+
+    "Normalize WhatsApp Event":  { "main": [[{ "node": "Build Unified Agent Context", "type": "main", "index": 0 }]] },
+    "Normalize Instagram Event": { "main": [[{ "node": "Build Unified Agent Context", "type": "main", "index": 0 }]] },
+    "Normalize Meta Ads Lead":   { "main": [[{ "node": "Fetch Meta Lead Details", "type": "main", "index": 0 }]] },
+    "Fetch Meta Lead Details":   { "main": [[{ "node": "Prepare Meta Lead For Agent", "type": "main", "index": 0 }]] },
+    "Prepare Meta Lead For Agent": { "main": [[{ "node": "Build Unified Agent Context", "type": "main", "index": 0 }]] },
+
+    "Build Unified Agent Context": { "main": [[{ "node": "Bougainvilla AI Booking Agent", "type": "main", "index": 0 }]] },
+    "Sarvam AI Chat Model":        { "ai_languageModel": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_languageModel", "index": 0 }]] },
+    "Guest Conversation Memory":   { "ai_memory": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_memory", "index": 0 }]] },
+    "Tool - Check Availability":   { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
+    "Tool - Property Search":      { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
+    "Tool - Create Booking":       { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
+    "Tool - Create CRM Lead":      { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
+    "Tool - Create Support Ticket":{ "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
+    "Tool - Human Handoff":        { "ai_tool": [[{ "node": "Bougainvilla AI Booking Agent", "type": "ai_tool", "index": 0 }]] },
+
+    "Bougainvilla AI Booking Agent": { "main": [[{ "node": "Parse AI Agent Decision", "type": "main", "index": 0 }]] },
+    "Parse AI Agent Decision":       { "main": [[{ "node": "Log AI Lead Decision", "type": "main", "index": 0 }]] },
+    "Log AI Lead Decision":          { "main": [[{ "node": "Route By Channel", "type": "main", "index": 0 }]] },
+    "Route By Channel": {
+      "main": [
+        [{ "node": "Send WhatsApp AI Reply", "type": "main", "index": 0 }],
+        [{ "node": "Send Instagram AI Reply", "type": "main", "index": 0 }],
+        [{ "node": "Prepare Meta Ads Lead Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Prepare Meta Ads Lead Response": { "main": [[{ "node": "Meta Lead Has WhatsApp", "type": "main", "index": 0 }]] },
+    "Meta Lead Has WhatsApp": {
+      "main": [
+        [{ "node": "Send Meta Lead WhatsApp", "type": "main", "index": 0 }],
+        [{ "node": "Notify Team For Meta Lead", "type": "main", "index": 0 }]
+      ]
+    },
+
+    "Booking Lead Webhook":          { "main": [[{ "node": "Normalize Booking Lead", "type": "main", "index": 0 }]] },
+    "Normalize Booking Lead":        { "main": [[{ "node": "PMS Availability Check", "type": "main", "index": 0 }]] },
+    "PMS Availability Check":        { "main": [[{ "node": "Prepare Sarvam Sales Decision", "type": "main", "index": 0 }]] },
+    "Prepare Sarvam Sales Decision": { "main": [[{ "node": "Sarvam Sales AI", "type": "main", "index": 0 }]] },
+    "Sarvam Sales AI":               { "main": [[{ "node": "Build Booking Response", "type": "main", "index": 0 }]] },
+    "Build Booking Response":        { "main": [[{ "node": "Send Guest Message", "type": "main", "index": 0 }]] },
+    "Send Guest Message":            { "main": [[{ "node": "Respond to Lead", "type": "main", "index": 0 }]] },
+
+    "Sarvam Voice Agent Event": { "main": [[{ "node": "Normalize Voice Event", "type": "main", "index": 0 }]] },
+    "Normalize Voice Event":    { "main": [[{ "node": "Voice Triage Prompt", "type": "main", "index": 0 }]] },
+    "Voice Triage Prompt":      { "main": [[{ "node": "Sarvam Conversation AI", "type": "main", "index": 0 }]] },
+    "Sarvam Conversation AI":   { "main": [[{ "node": "Build Voice Action", "type": "main", "index": 0 }]] },
+    "Build Voice Action":       { "main": [[{ "node": "Voice Needs Human", "type": "main", "index": 0 }]] },
+    "Voice Needs Human": {
+      "main": [
+        [{ "node": "Create Voice Support Ticket", "type": "main", "index": 0 }],
+        [{ "node": "Return Voice Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Voice Support Ticket": { "main": [[{ "node": "Return Voice Response", "type": "main", "index": 0 }]] },
+    "Return Voice Response":       { "main": [[{ "node": "Respond Voice Event", "type": "main", "index": 0 }]] },
+
+    "Follow-up Scheduler":        { "main": [[{ "node": "Fetch Follow-up Candidates", "type": "main", "index": 0 }]] },
+    "Fetch Follow-up Candidates": { "main": [[{ "node": "Build Follow-up Messages", "type": "main", "index": 0 }]] },
+    "Build Follow-up Messages":   { "main": [[{ "node": "Sarvam Follow-up Copy", "type": "main", "index": 0 }]] },
+    "Sarvam Follow-up Copy":      { "main": [[{ "node": "Prepare Follow-up Send", "type": "main", "index": 0 }]] },
+    "Prepare Follow-up Send":     { "main": [[{ "node": "Send Follow-up", "type": "main", "index": 0 }]] },
+
+    "Pricing Scheduler":        { "main": [[{ "node": "Fetch Property Metrics", "type": "main", "index": 0 }]] },
+    "Fetch Property Metrics":   { "main": [[{ "node": "Build Pricing Prompt", "type": "main", "index": 0 }]] },
+    "Build Pricing Prompt":     { "main": [[{ "node": "Sarvam Revenue AI", "type": "main", "index": 0 }]] },
+    "Sarvam Revenue AI":        { "main": [[{ "node": "Prepare Pricing Approval", "type": "main", "index": 0 }]] },
+    "Prepare Pricing Approval": { "main": [[{ "node": "Send Pricing Approval", "type": "main", "index": 0 }]] },
+
+    "Review Webhook":              { "main": [[{ "node": "Normalize Review", "type": "main", "index": 0 }]] },
+    "Normalize Review":            { "main": [[{ "node": "Build Reputation Prompt", "type": "main", "index": 0 }]] },
+    "Build Reputation Prompt":     { "main": [[{ "node": "Sarvam Review AI", "type": "main", "index": 0 }]] },
+    "Sarvam Review AI":            { "main": [[{ "node": "Prepare Reputation Actions", "type": "main", "index": 0 }]] },
+    "Prepare Reputation Actions":  { "main": [[{ "node": "Publish Review Reply", "type": "main", "index": 0 }]] },
+    "Publish Review Reply":        { "main": [[{ "node": "Notify Staff", "type": "main", "index": 0 }]] },
+    "Notify Staff":                { "main": [[{ "node": "Respond Review", "type": "main", "index": 0 }]] },
+
+    "Dashboard Metrics Webhook":   { "main": [[{ "node": "Authorize Dashboard Request", "type": "main", "index": 0 }]] },
+    "Authorize Dashboard Request": { "main": [[{ "node": "Fetch CRM Metrics", "type": "main", "index": 0 }]] },
+    "Fetch CRM Metrics":           { "main": [[{ "node": "Shape Dashboard Metrics", "type": "main", "index": 0 }]] },
+    "Shape Dashboard Metrics":     { "main": [[{ "node": "Respond Dashboard Metrics", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "meta": {
+    "instanceId": "0bc10d91b1b7cd5e55fd31e969206bdd154ed8698712bd6e803c1f1bfd583f32"
+  }
+}
