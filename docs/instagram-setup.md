@@ -22,9 +22,11 @@ META_VERIFY_TOKEN        Step 4   (you generate this one yourself)
 
 ## Step 0 · Prerequisites
 
-- [ ] Instagram account switched to **Professional** (Business or Creator)
-- [ ] In the Instagram mobile app: **Settings → Messages and story replies →
-      Allow access to messages** = **ON**
+Both apply to the **villa account**, not your personal one:
+
+- [ ] Villa Instagram account switched to **Professional** (Business or Creator)
+- [ ] In the Instagram app on that account: **Settings → Messages and story
+      replies → Allow access to messages** = **ON**
 
 That second one is the classic silent failure. With it off, every step below
 succeeds and no DM ever reaches your webhook, with no error anywhere.
@@ -61,18 +63,41 @@ The workflow only needs `instagram_business_basic` and
 
 ## Step 3 · Token + account ID → `META_ACCESS_TOKEN`, `INSTAGRAM_BUSINESS_ID`
 
-Panel 2, **Generate access tokens**. Two things in order, and the order matters:
+Panel 2, **Generate access tokens**. Order matters, and *which account* matters
+more.
 
-1. **Roles tab → Instagram Testers → Add people** → add your Instagram account.
-2. **Accept the invite from inside Instagram**: instagram.com → Settings →
-   **Apps and websites → Tester invites → Accept**. Until you accept, the next
-   step fails with an unhelpful error.
-3. Back on API setup → **Add account** → log in with the Instagram account.
+### Which account logs in?
 
-You now get:
+**The villa account.** The token is scoped to whoever logs in, so signing in with
+a personal account produces an agent sitting on the wrong inbox — it will never
+see a villa DM.
+
+Add **two** accounts as Instagram Testers, for different reasons:
+
+| Account | Why |
+|---|---|
+| **Villa** (the business) | so **Add account** can connect it — it owns the token |
+| **Your personal account** | so it can DM the agent while the app is in development mode |
+
+The second is easy to miss. In development mode the app may only interact with
+accounts that hold a role on it. Your personal account is not the business — it
+is your **test customer**. Without a role it can DM the villa account and get no
+reply, which looks exactly like a broken webhook.
+
+### The sequence
+
+1. **Roles tab → Instagram Testers → Add people** → add **both** handles.
+2. **Accept both invites from inside Instagram.** Log into each account at
+   instagram.com → Settings → **Apps and websites → Tester invites → Accept**.
+   Until accepted, the next step fails with an unhelpful error.
+3. Back on API setup → **Add account** → log in as **the villa account**.
+
+You now get, both belonging to the villa account:
 
 - the **access token** → `META_ACCESS_TOKEN` ✅
 - the **Instagram account ID** shown next to it → `INSTAGRAM_BUSINESS_ID` ✅
+
+Then test the loop by DMing the villa account **from your personal account**.
 
 ### ⚠️ This token expires in 60 days
 
