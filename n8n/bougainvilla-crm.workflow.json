@@ -568,17 +568,17 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://example.invalid/crm/leads",
+        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/record_exchange",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({channel:$('Parse AI Agent Decision').item.json.channel,guest_id:$('Parse AI Agent Decision').item.json.senderId,message:$('Parse AI Agent Decision').item.json.text||'',intent:$('Parse AI Agent Decision').item.json.intent,lead_stage:$('Parse AI Agent Decision').item.json.lead_stage,booking_status:$('Parse AI Agent Decision').item.json.booking_status,property_id:$('Parse AI Agent Decision').item.json.property_id||'',booking_id:$('Parse AI Agent Decision').item.json.booking_id||''}) }}",
-        "options": {},
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
+        "body": "={{ JSON.stringify({p_channel:$('Parse AI Agent Decision').item.json.channel,p_sender_id:$('Parse AI Agent Decision').item.json.senderId,p_in_message_id:$('Parse AI Agent Decision').item.json.messageId||null,p_in_body:$('Parse AI Agent Decision').item.json.text||null,p_out_message_id:$json.message_id||null,p_out_body:$('Parse AI Agent Decision').item.json.reply||null,p_intent:$('Parse AI Agent Decision').item.json.intent||null,p_lead_stage:$('Parse AI Agent Decision').item.json.lead_stage||null,p_booking_status:$('Parse AI Agent Decision').item.json.booking_status||null,p_needs_human:Boolean($('Parse AI Agent Decision').item.json.needs_human),p_check_in:String($('Parse AI Agent Decision').item.json.check_in||''),p_check_out:String($('Parse AI Agent Decision').item.json.check_out||''),p_guest_count:String($('Parse AI Agent Decision').item.json.guests||''),p_property_id:String($('Parse AI Agent Decision').item.json.property_id||'')}) }}",
+        "options": {}
       },
       "id": "045cc0f4-ae99-48f9-8407-800955c97da7",
-      "name": "Log AI Lead Decision",
+      "name": "Save To Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -586,9 +586,9 @@
         192
       ],
       "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_CRM",
-          "name": "CRM API (Bearer)"
+        "supabaseApi": {
+          "id": "CRED_SUPABASE",
+          "name": "Supabase (Bougainvilla)"
         }
       },
       "onError": "continueRegularOutput"
@@ -1395,13 +1395,18 @@
     },
     {
       "parameters": {
-        "url": "https://example.invalid/crm/metrics",
-        "options": {},
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
+        "method": "POST",
+        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/dashboard_metrics",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({}) }}",
+        "options": {}
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b032",
-      "name": "Fetch CRM Metrics",
+      "name": "Fetch Supabase Metrics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -1410,15 +1415,15 @@
       ],
       "onError": "continueRegularOutput",
       "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_CRM",
-          "name": "CRM API (Bearer)"
+        "supabaseApi": {
+          "id": "CRED_SUPABASE",
+          "name": "Supabase (Bougainvilla)"
         }
       }
     },
     {
       "parameters": {
-        "jsCode": "// Shapes whatever the CRM returns into the contract the dashboard reads.\n// If the CRM is unreachable the dashboard is told so and keeps its demo numbers.\nconst r = $json || {};\nconst failed = !!r.error || Object.keys(r).length === 0;\nconst src = r.data || r;\nconst num = (v, d = null) => (typeof v === 'number' && isFinite(v) ? v : d);\n\nreturn [{ json: {\n  generated_at: new Date().toISOString(),\n  // 'no_crm' means n8n answered but CRM_METRICS_URL did not - a different\n  // problem from n8n being unreachable, and the dashboard says so.\n  source: failed ? 'no_crm' : 'crm',\n  stats: {\n    total_bookings: num(src.total_bookings),\n    active_leads:   num(src.active_leads),\n    revenue_mtd:    num(src.revenue_mtd),\n    avg_rating:     num(src.avg_rating)\n  },\n  channels: {\n    instagram: num(src.channels?.instagram),\n    direct:    num(src.channels?.direct),\n    voice:     num(src.channels?.voice)\n  },\n  revenue_series: {\n    labels: Array.isArray(src.revenue_series?.labels) ? src.revenue_series.labels : null,\n    values: Array.isArray(src.revenue_series?.values) ? src.revenue_series.values : null\n  },\n  recent_bookings: Array.isArray(src.recent_bookings) ? src.recent_bookings.slice(0, 8) : null,\n  recent_leads:    Array.isArray(src.recent_leads)    ? src.recent_leads.slice(0, 8)    : null\n} }];"
+        "jsCode": "// dashboard_metrics() already returns the exact shape the page wants, so\n// this only labels the source and guards the failure case.\nconst r = $json || {};\nconst failed = !!r.error || !r.stats;\n\nif (failed) {\n  return [{ json: { source: 'no_db', generated_at: new Date().toISOString(),\n                    detail: 'Supabase unreachable or schema not installed' } }];\n}\n\nreturn [{ json: {\n  source: 'supabase',\n  generated_at: new Date().toISOString(),\n  stats: r.stats,\n  channels: r.channels || {},\n  message_series: r.message_series || { labels: [], values: [] },\n  recent_leads: Array.isArray(r.recent_leads) ? r.recent_leads : [],\n} }];"
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b033",
       "name": "Shape Dashboard Metrics",
@@ -2003,18 +2008,7 @@
       "main": [
         [
           {
-            "node": "Fetch CRM Metrics",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fetch CRM Metrics": {
-      "main": [
-        [
-          {
-            "node": "Shape Dashboard Metrics",
+            "node": "Fetch Supabase Metrics",
             "type": "main",
             "index": 0
           }
@@ -2047,7 +2041,18 @@
       "main": [
         [
           {
-            "node": "Log AI Lead Decision",
+            "node": "Save To Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Supabase Metrics": {
+      "main": [
+        [
+          {
+            "node": "Shape Dashboard Metrics",
             "type": "main",
             "index": 0
           }

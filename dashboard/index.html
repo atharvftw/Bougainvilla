@@ -3,1002 +3,345 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Bougainvilla CRM — Bookings & Operations</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<title>Bougainvilla — Instagram Concierge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Every number on this page comes from Supabase. There is no demo data:
+   if the database is empty the page says so rather than inventing rows. */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
 :root{
-  --primary:#0EA5E9;--primary-d:#0284C7;--primary-l:#E0F2FE;
-  --bg:#F1F5F9;--surface:#FFFFFF;--border:#E2E8F0;--border-l:#F8FAFC;
-  --text:#0F172A;--text-2:#64748B;--text-3:#94A3B8;
-  --green:#10B981;--green-l:#D1FAE5;
-  --amber:#F59E0B;--amber-l:#FEF3C7;
-  --red:#EF4444;--red-l:#FEE2E2;
-  --purple:#8B5CF6;--purple-l:#EDE9FE;
-  --sw:224px;--th:60px
+  --bg:#F6F7F9; --surface:#FFFFFF; --border:#E4E7EC; --border-soft:#F1F3F6;
+  --ink:#101828; --ink-2:#475467; --ink-3:#98A2B3;
+  --accent:#0EA5E9; --accent-soft:#E0F2FE;
+  --good:#059669; --good-soft:#D1FAE5;
+  --warn:#F59E0B; --warn-soft:#FEF3C7;
+  --crit:#DC2626; --crit-soft:#FEE2E2;
+  --shadow:0 1px 2px rgba(16,24,40,.05);
 }
-body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;display:flex;height:100vh;overflow:hidden}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0C111D; --surface:#161B26; --border:#292F3B; --border-soft:#1F242F;
+    --ink:#F5F6F7; --ink-2:#94A3B8; --ink-3:#667085;
+    --accent:#38BDF8; --accent-soft:#0B3A52;
+    --good:#34D399; --good-soft:#06331F;
+    --warn:#FBBF24; --warn-soft:#3A2A05;
+    --crit:#F87171; --crit-soft:#3A1212;
+    --shadow:none;
+  }
+}
 
-/* ── SIDEBAR ── */
-.sb{width:var(--sw);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;z-index:20}
-.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border-l)}
-.sb-logomark{display:flex;align-items:center;gap:10px}
-.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#0EA5E9,#6366F1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo-icon svg{width:17px;height:17px;fill:white;stroke:none}
-.logo-name{font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:-0.3px}
-.logo-sub{font-size:10px;color:var(--text-3);font-weight:400}
-.sb-sec{padding:10px 10px 4px}
-.nav-lbl{font-size:10px;font-weight:600;color:var(--text-3);letter-spacing:0.7px;padding:0 8px 7px;text-transform:uppercase}
-.nav-it{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;cursor:pointer;color:var(--text-2);font-size:13px;font-weight:500;transition:all .14s;margin-bottom:1px}
-.nav-it:hover{background:var(--bg);color:var(--text)}
-.nav-it.active{background:var(--primary-l);color:var(--primary-d)}
-.nav-it.active .ni{stroke:var(--primary-d)}
-.ni{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;flex-shrink:0}
-.nb{margin-left:auto;background:var(--red);color:#fff;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
-.nb.am{background:var(--amber)}
-.sb-ft{margin-top:auto;padding:10px;border-top:1px solid var(--border)}
-.ai-live{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;background:var(--bg);font-size:12px;color:var(--text-2)}
-.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg); color:var(--ink); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px; margin:0 auto; padding:32px 24px 64px}
 
-/* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-.topbar{height:var(--th);background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:14px;flex-shrink:0}
-.pg-title{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap}
-.srch{margin-left:20px;flex:1;max-width:300px;position:relative}
-.srch input{width:100%;padding:7px 11px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;background:var(--bg);color:var(--text);outline:none;font-family:inherit}
-.srch input:focus{border-color:var(--primary)}
-.srch svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;stroke:var(--text-3);fill:none}
-.tb-acts{display:flex;align-items:center;gap:8px;margin-left:auto}
-.ib{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;transition:border-color .14s}
-.ib:hover{border-color:var(--primary)}
-.ib svg{width:15px;height:15px;stroke:var(--text-2);fill:none}
-.nd{position:absolute;top:5px;right:5px;width:6px;height:6px;background:var(--red);border-radius:50%;border:1.5px solid #fff}
-.av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#0EA5E9,#6366F1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;cursor:pointer}
+/* ── header ── */
+header{display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:28px}
+.brand{flex:1; min-width:220px}
+h1{font-size:20px; font-weight:700; letter-spacing:-.02em}
+.sub{font-size:13px; color:var(--ink-2); margin-top:2px}
 
-/* ── CONTENT ── */
-.content{flex:1;overflow-y:auto;padding:22px 24px}
-.page{display:none}.page.active{display:block}
+.status{display:inline-flex; align-items:center; gap:8px; padding:7px 12px;
+  border:1px solid var(--border); border-radius:999px; background:var(--surface);
+  font-size:12.5px; font-weight:500; color:var(--ink-2); box-shadow:var(--shadow)}
+.dot{width:8px; height:8px; border-radius:50%; background:var(--ink-3); flex-shrink:0}
+.dot.live{background:var(--good); animation:pulse 2.4s ease-in-out infinite}
+.dot.warn{background:var(--warn)}
+.dot.crit{background:var(--crit)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 
-/* ── GRID / CARDS ── */
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.g21{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
-.ch{padding:15px 18px;border-bottom:1px solid #F8FAFC;display:flex;align-items:center;justify-content:space-between}
-.ct{font-size:13.5px;font-weight:600;color:var(--text)}
-.cs{font-size:11.5px;color:var(--text-3);margin-top:2px}
-.cb{padding:18px}
+/* ── stat tiles ── */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:14px; margin-bottom:22px}
+.tile{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px 18px; box-shadow:var(--shadow)}
+.tile-label{font-size:12px; font-weight:500; color:var(--ink-2); letter-spacing:.01em}
+.tile-value{font-size:30px; font-weight:700; letter-spacing:-.03em; margin-top:6px;
+  font-variant-numeric:tabular-nums; line-height:1.1}
+.tile-note{font-size:12px; color:var(--ink-3); margin-top:4px}
+.tile.flag .tile-value{color:var(--warn)}
+.tile.flag.zero .tile-value{color:var(--ink)}
 
-/* ── STAT CARD ── */
-.sc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
-.sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-.sc-lbl{font-size:11.5px;color:var(--text-2);font-weight:500}
-.sc-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sc-icon svg{width:16px;height:16px;stroke-width:1.8;fill:none}
-.sc-val{font-size:24px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
-.sc-meta{margin-top:6px;font-size:11.5px;color:var(--text-3);display:flex;align-items:center;gap:4px}
-.up{color:var(--green);font-weight:600}.down{color:var(--red);font-weight:600}
+/* ── cards ── */
+.card{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  box-shadow:var(--shadow); margin-bottom:18px; overflow:hidden}
+.card-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  padding:16px 18px 0}
+.card-title{font-size:14px; font-weight:600}
+.card-sub{font-size:12px; color:var(--ink-3)}
+.card-body{padding:14px 18px 18px}
 
-/* ── BADGE ── */
-.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
-.bg{background:var(--green-l);color:#065F46}
-.by{background:var(--amber-l);color:#92400E}
-.br{background:var(--red-l);color:#991B1B}
-.bb{background:var(--primary-l);color:#0369A1}
-.bp{background:var(--purple-l);color:#5B21B6}
-.bgr{background:var(--bg);color:var(--text-2)}
+/* ── chart ── */
+.chart{width:100%; overflow-x:auto}
+svg.bars{display:block; width:100%; height:180px; min-width:420px}
+.bar{fill:var(--accent); transition:opacity .12s}
+.bar:hover{opacity:.75}
+.bar-hit{fill:transparent; cursor:default}
+.axis-line{stroke:var(--border); stroke-width:1}
+.axis-text{fill:var(--ink-3); font-size:10.5px; font-family:inherit}
+.bar-label{fill:var(--ink-2); font-size:11px; font-weight:600; font-family:inherit;
+  font-variant-numeric:tabular-nums}
 
-/* ── AI TAG ── */
-.ai-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:#F5F3FF;color:#5B21B6;border-radius:6px;font-size:10.5px;font-weight:700}
-.ai-tag::before{content:'✦';font-size:9px}
+/* ── flow summary ── */
+.flow{display:flex; gap:26px; flex-wrap:wrap; padding-top:4px}
+.flow-item{display:flex; align-items:baseline; gap:7px}
+.flow-num{font-size:17px; font-weight:700; font-variant-numeric:tabular-nums}
+.flow-lab{font-size:12.5px; color:var(--ink-2)}
 
-/* ── CHANNEL PILL ── */
-.cp{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;white-space:nowrap}
-.cw{background:#DCFCE7;color:#166534}.ci{background:#FDF2F8;color:#9D174D}
-.cm{background:#EFF6FF;color:#1D4ED8}.cv{background:#FEF3C7;color:#92400E}
-.cd{background:#F5F3FF;color:#5B21B6}
+/* ── table ── */
+table{width:100%; border-collapse:collapse; font-size:13px}
+th{text-align:left; font-size:11px; font-weight:600; text-transform:uppercase;
+  letter-spacing:.05em; color:var(--ink-3); padding:0 12px 9px; white-space:nowrap}
+td{padding:11px 12px; border-top:1px solid var(--border-soft); vertical-align:top}
+tbody tr:hover{background:var(--border-soft)}
+.who{font-weight:600}
+.msg{color:var(--ink-2); max-width:380px}
+.when{color:var(--ink-3); white-space:nowrap; font-variant-numeric:tabular-nums}
 
-/* ── TABLE ── */
-.tw{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-th{padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:var(--text-2);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-td{padding:12px 14px;font-size:12.5px;border-bottom:1px solid #F8FAFC;color:var(--text);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#FAFBFD}
-.tid{color:var(--primary);font-weight:600;font-size:12px}
+.badge{display:inline-block; padding:2px 9px; border-radius:999px;
+  font-size:11px; font-weight:600; white-space:nowrap}
+.badge.ok{background:var(--good-soft); color:var(--good)}
+.badge.wait{background:var(--warn-soft); color:var(--warn)}
+.badge.neutral{background:var(--border-soft); color:var(--ink-2)}
 
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;border:none;font-family:inherit;transition:all .14s}
-.btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
-.btn-p{background:var(--primary);color:#fff}.btn-p:hover{background:var(--primary-d)}
-.btn-o{background:#fff;border:1px solid var(--border);color:var(--text)}.btn-o:hover{border-color:var(--primary);color:var(--primary)}
-.btn-s{padding:4px 10px;font-size:11.5px}
-.btn-danger{background:var(--red-l);color:var(--red);border:none}
+/* ── empty states ── */
+.empty{padding:34px 18px; text-align:center; color:var(--ink-3)}
+.empty-title{font-size:14px; font-weight:600; color:var(--ink-2); margin-bottom:5px}
+.empty-note{font-size:12.5px; max-width:400px; margin:0 auto; line-height:1.6}
 
-/* ── SECTION HEADER ── */
-.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
-.stl{font-size:16px;font-weight:700}
-.stl2{font-size:12px;color:var(--text-3);margin-top:3px}
-
-/* ── FILTER BAR ── */
-.fb{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.fsel{padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:#fff;color:var(--text);cursor:pointer;outline:none;font-family:inherit}
-.fsel:focus{border-color:var(--primary)}
-
-/* ── CHARTS ── */
-.cc{position:relative;overflow:hidden}
-.cc-md{height:220px}.cc-lg{height:270px}
-
-/* ── DOT ── */
-.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.dg{background:var(--green)}.dy{background:var(--amber)}.dr{background:var(--red)}.dgr{background:var(--text-3)}
-
-/* ── PROGRESS ── */
-.pr{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-.prf{height:100%;border-radius:3px;background:var(--primary)}
-
-/* ── PROPERTY GRID ── */
-.prop-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .15s,box-shadow .15s}
-.prop-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
-.pi{height:130px;display:flex;align-items:center;justify-content:center;font-size:36px;position:relative}
-.pi-badge{position:absolute;top:10px;right:10px}
-.pb{padding:14px 16px}
-.pn{font-size:13.5px;font-weight:700;margin-bottom:3px}
-.pl{font-size:11.5px;color:var(--text-3);margin-bottom:12px}
-.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.pst{background:var(--bg);border-radius:7px;padding:7px 8px;text-align:center}
-.psv{font-size:14px;font-weight:700}.psl{font-size:9.5px;color:var(--text-3);margin-top:1px}
-
-/* ── REVIEW ── */
-.rv{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:15px 17px;margin-bottom:12px}
-.rv.neg{border-left:3px solid var(--red)}
-.rv-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px}
-.rv-n{font-size:13px;font-weight:600}
-.rv-d{font-size:11px;color:var(--text-3)}
-.stars{color:#F59E0B;font-size:13px;letter-spacing:1px}
-.rv-t{font-size:12.5px;color:var(--text-2);margin-bottom:11px;line-height:1.6}
-.rv-rep{background:var(--primary-l);border-radius:8px;padding:9px 12px}
-.rv-rl{font-size:10.5px;font-weight:700;color:var(--primary-d);margin-bottom:3px}
-.rv-rt{font-size:12px;color:#0369A1;line-height:1.5}
-.rv-warn{background:var(--amber-l);border-radius:8px;padding:9px 12px;border:1px solid #FDE68A}
-.rv-wl{font-size:10.5px;font-weight:700;color:#92400E;margin-bottom:3px}
-.rv-wt{font-size:12px;color:#92400E}
-
-/* ── SUPPORT TICKET ── */
-.tk{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
-.tkp{width:4px;height:38px;border-radius:2px;flex-shrink:0}
-.tkh{background:var(--red)}.tkm{background:var(--amber)}.tkl{background:var(--green)}
-.tk-info{flex:1}
-.tk-t{font-size:12.5px;font-weight:600;margin-bottom:3px}
-.tk-m{font-size:11.5px;color:var(--text-3)}
-
-/* ── CALL ROW ── */
-.cr{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid #F8FAFC;gap:12px}
-.cr:last-child{border-bottom:none}
-.ci-ico{width:34px;height:34px;background:var(--green-l);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.ci-ico.missed{background:var(--red-l)}
-.ci-ico svg{width:15px;height:15px;stroke:var(--green);fill:none;stroke-width:1.8}
-.ci-ico.missed svg{stroke:var(--red)}
-
-/* ── FOLLOW-UP ── */
-.fu{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F8FAFC}
-.fu:last-child{border-bottom:none}
-.fu-t{font-size:11px;color:var(--text-3);min-width:70px}
-
-/* ── LEAD AVATAR ── */
-.la{width:34px;height:34px;border-radius:50%;background:var(--primary-l);display:flex;align-items:center;justify-content:center;color:var(--primary);font-size:12px;font-weight:700;flex-shrink:0}
-
-/* ── MISC ── */
-.div{height:1px;background:var(--border-l);margin:14px 0}
-.legend-row{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid #F8FAFC}
-.legend-row:last-child{border-bottom:none}
-.legend-dot{width:10px;height:10px;border-radius:2px;display:inline-block;margin-right:6px}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
-
-/* ── TOOLTIP on pricing ── */
-.pricing-rec{display:flex;align-items:center;gap:8px}
+.foot{font-size:12px; color:var(--ink-3); text-align:center; margin-top:26px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
+  background:var(--border-soft); padding:1px 5px; border-radius:4px}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<!-- ═══════ SIDEBAR ═══════ -->
-<nav class="sb">
-  <div class="sb-logo">
-    <div class="sb-logomark">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      </div>
-      <div>
-        <div class="logo-name">Bougainvilla</div>
-        <div class="logo-sub">Bookings &amp; Operations CRM</div>
-      </div>
+  <header>
+    <div class="brand">
+      <h1>Bougainvilla</h1>
+      <div class="sub">Instagram concierge · live activity</div>
+    </div>
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="status-text">Connecting…</span>
+    </div>
+  </header>
+
+  <div class="tiles">
+    <div class="tile">
+      <div class="tile-label">Conversations</div>
+      <div class="tile-value" id="t-conversations">—</div>
+      <div class="tile-note">people who have messaged</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Active this week</div>
+      <div class="tile-value" id="t-active">—</div>
+      <div class="tile-note">seen in the last 7 days</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Messages today</div>
+      <div class="tile-value" id="t-today">—</div>
+      <div class="tile-note">in and out</div>
+    </div>
+    <div class="tile flag" id="tile-human">
+      <div class="tile-label">Waiting on a human</div>
+      <div class="tile-value" id="t-human">—</div>
+      <div class="tile-note">agent flagged these</div>
     </div>
   </div>
 
-  <div class="sb-sec">
-    <div class="nav-lbl">Overview</div>
-    <div class="nav-it active" onclick="nav('dashboard',this)">
-      <svg class="ni" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Messages received</span>
+      <span class="card-sub">last 14 days</span>
+    </div>
+    <div class="card-body">
+      <div class="chart" id="chart-wrap"></div>
+      <div class="flow" id="flow"></div>
     </div>
   </div>
 
-  <div class="sb-sec">
-    <div class="nav-lbl">Operations</div>
-    <div class="nav-it" onclick="nav('bookings',this)">
-      <svg class="ni" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      Bookings
-      <span class="nb">4</span>
+  <div class="card">
+    <div class="card-head">
+      <span class="card-title">Recent conversations</span>
+      <span class="card-sub" id="recent-count"></span>
     </div>
-    <div class="nav-it" onclick="nav('leads',this)">
-      <svg class="ni" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Leads
-      <span class="nb am">12</span>
-    </div>
-    <div class="nav-it" onclick="nav('voice',this)">
-      <svg class="ni" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-      Voice Calls
-    </div>
-    <div class="nav-it" onclick="nav('properties',this)">
-      <svg class="ni" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      Properties
-    </div>
+    <div class="card-body" id="recent-body"></div>
   </div>
 
-  <div class="sb-sec">
-    <div class="nav-lbl">Intelligence</div>
-    <div class="nav-it" onclick="nav('followups',this)">
-      <svg class="ni" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      Follow-ups
-      <span class="nb am">8</span>
-    </div>
-    <div class="nav-it" onclick="nav('pricing',this)">
-      <svg class="ni" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      AI Pricing
-    </div>
-    <div class="nav-it" onclick="nav('reviews',this)">
-      <svg class="ni" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-      Reviews
-    </div>
-    <div class="nav-it" onclick="nav('support',this)">
-      <svg class="ni" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      Support
-      <span class="nb">3</span>
-    </div>
-  </div>
-
-  <div class="sb-ft">
-    <div class="ai-live">
-      <span class="pulse" id="conn-pulse"></span>
-      <span id="conn-label">Connecting…</span>
-    </div>
-  </div>
-</nav>
-
-<!-- ═══════ MAIN ═══════ -->
-<div class="main">
-  <div class="topbar">
-    <div class="pg-title" id="pg-title">Dashboard</div>
-    <div class="srch">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" placeholder="Search guests, bookings, properties…">
-    </div>
-    <div class="tb-acts">
-      <div class="ib">
-        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <div class="nd"></div>
-      </div>
-      <div class="ib">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
-      </div>
-      <div class="av">AK</div>
-    </div>
-  </div>
-
-  <div class="content">
-
-  <!-- ══════════ DASHBOARD ══════════ -->
-  <div class="page active" id="dashboard">
-    <div class="g4">
-      <div class="sc">
-        <div class="sc-top">
-          <div class="sc-lbl">Total Bookings</div>
-          <div class="sc-icon" style="background:#E0F2FE">
-            <svg viewBox="0 0 24 24" style="stroke:#0EA5E9"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
-        </div>
-        <div class="sc-val" id="stat-bookings">247</div>
-        <div class="sc-meta"><span class="up">+18%</span> vs last month</div>
-      </div>
-      <div class="sc">
-        <div class="sc-top">
-          <div class="sc-lbl">Active Leads</div>
-          <div class="sc-icon" style="background:#FEF3C7">
-            <svg viewBox="0 0 24 24" style="stroke:#F59E0B"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-          </div>
-        </div>
-        <div class="sc-val" id="stat-leads">84</div>
-        <div class="sc-meta"><span class="up">+32</span> this week</div>
-      </div>
-      <div class="sc">
-        <div class="sc-top">
-          <div class="sc-lbl">Revenue (MTD)</div>
-          <div class="sc-icon" style="background:#D1FAE5">
-            <svg viewBox="0 0 24 24" style="stroke:#10B981"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
-        </div>
-        <div class="sc-val" id="stat-revenue">₹18.4L</div>
-        <div class="sc-meta"><span class="up">+24%</span> vs last month</div>
-      </div>
-      <div class="sc">
-        <div class="sc-top">
-          <div class="sc-lbl">Avg Rating</div>
-          <div class="sc-icon" style="background:#EDE9FE">
-            <svg viewBox="0 0 24 24" style="stroke:#8B5CF6"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          </div>
-        </div>
-        <div class="sc-val" id="stat-rating">4.87</div>
-        <div class="sc-meta"><span class="up">+0.12</span> this month</div>
-      </div>
-    </div>
-
-    <div class="g21" style="margin-bottom:18px">
-      <div class="card">
-        <div class="ch">
-          <div><div class="ct">Booking Revenue</div><div class="cs">Last 7 months</div></div>
-          <select class="fsel" style="font-size:11px;padding:4px 8px">
-            <option>Monthly</option><option>Weekly</option>
-          </select>
-        </div>
-        <div class="cb"><div class="cc cc-lg"><canvas id="revChart"></canvas></div></div>
-      </div>
-      <div class="card">
-        <div class="ch"><div class="ct">Leads by Channel</div><div class="cs">This month</div></div>
-        <div class="cb">
-          <div class="cc cc-md"><canvas id="chChart"></canvas></div>
-          <div style="margin-top:14px">
-            <div class="legend-row"><span><span class="legend-dot" style="background:#E1306C"></span>Instagram</span><strong id="ch-instagram">58%</strong></div>
-            <div class="legend-row"><span><span class="legend-dot" style="background:#8B5CF6"></span>Direct</span><strong id="ch-direct">27%</strong></div>
-            <div class="legend-row"><span><span class="legend-dot" style="background:#F59E0B"></span>Voice</span><strong id="ch-voice">15%</strong></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="g2">
-      <div class="card">
-        <div class="ch"><div class="ct">Recent Bookings</div><span class="badge bb" id="data-badge">Live</span></div>
-        <div class="tw">
-          <table>
-            <thead><tr><th>Guest</th><th>Property</th><th>Dates</th><th>Status</th></tr></thead>
-            <tbody id="recent-bookings">
-              <tr><td><strong>Priya Sharma</strong></td><td>Goa Beach Villa</td><td>Nov 15–19</td><td><span class="badge bg">Confirmed</span></td></tr>
-              <tr><td><strong>Rahul Mehta</strong></td><td>Manali Cottage</td><td>Nov 22–26</td><td><span class="badge by">Pending</span></td></tr>
-              <tr><td><strong>Anjali Singh</strong></td><td>Mumbai Apt.</td><td>Dec 1–5</td><td><span class="badge bg">Confirmed</span></td></tr>
-              <tr><td><strong>Vikram Nair</strong></td><td>Coorg Treehouse</td><td>Dec 8–12</td><td><span class="badge bb">Awaiting Payment</span></td></tr>
-              <tr><td><strong>Sneha Reddy</strong></td><td>Jaisalmer Camp</td><td>Dec 20–24</td><td><span class="badge bg">Confirmed</span></td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch"><div class="ct">Pending Follow-ups</div><span class="badge by">8 Due</span></div>
-        <div class="cb" style="padding:0 16px">
-          <div class="fu">
-            <div class="fu-t">2 hrs ago</div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Suresh Kumar</div><div style="font-size:11.5px;color:var(--text-3)">Goa availability — Dec window</div></div>
-            <span class="cp ci">Instagram</span>
-          </div>
-          <div class="fu">
-            <div class="fu-t">4 hrs ago</div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Meera Joshi</div><div style="font-size:11.5px;color:var(--text-3)">Corporate packages query</div></div>
-            <span class="cp ci">Instagram</span>
-          </div>
-          <div class="fu">
-            <div class="fu-t">6 hrs ago</div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Deepak Rao</div><div style="font-size:11.5px;color:var(--text-3)">Payment link resend request</div></div>
-            <span class="cp cd">Direct</span>
-          </div>
-          <div class="fu">
-            <div class="fu-t">8 hrs ago</div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Pooja Patel</div><div style="font-size:11.5px;color:var(--text-3)">Manali property — Jan dates</div></div>
-            <span class="cp cv">Voice</span>
-          </div>
-          <div class="fu">
-            <div class="fu-t">10 hrs ago</div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Aditya Verma</div><div style="font-size:11.5px;color:var(--text-3)">Check-in details needed</div></div>
-            <span class="cp ci">Instagram</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════ BOOKINGS ══════════ -->
-  <div class="page" id="bookings">
-    <div class="sh">
-      <div><div class="stl">Bookings</div><div class="stl2">247 total · 4 need attention</div></div>
-      <button class="btn btn-p"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Booking</button>
-    </div>
-    <div class="fb">
-      <select class="fsel"><option>All Statuses</option><option>Confirmed</option><option>Pending Payment</option><option>Cancelled</option><option>Checked In</option></select>
-      <select class="fsel"><option>All Properties</option><option>Goa Beach Villa</option><option>Manali Cottage</option><option>Mumbai Apartment</option><option>Coorg Treehouse</option><option>Jaisalmer Desert Camp</option></select>
-      <select class="fsel"><option>This Month</option><option>Last Month</option><option>Last 3 Months</option></select>
-    </div>
-    <div class="card">
-      <div class="tw">
-        <table>
-          <thead><tr><th>ID</th><th>Guest</th><th>Channel</th><th>Property</th><th>Check-In</th><th>Check-Out</th><th>Guests</th><th>Amount</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            <tr><td class="tid">BK-2401</td><td><strong>Priya Sharma</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 98765 43210</span></td><td><span class="cp ci">Instagram</span></td><td>Goa Beach Villa</td><td>Nov 15, 2025</td><td>Nov 19, 2025</td><td>2</td><td><strong>₹42,000</strong></td><td><span class="badge bg">Confirmed</span></td><td><button class="btn btn-o btn-s">View</button></td></tr>
-            <tr><td class="tid">BK-2402</td><td><strong>Rahul Mehta</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 87654 32109</span></td><td><span class="cp ci">Instagram</span></td><td>Manali Cottage</td><td>Nov 22, 2025</td><td>Nov 26, 2025</td><td>4</td><td><strong>₹68,000</strong></td><td><span class="badge by">Pending</span></td><td><button class="btn btn-o btn-s">View</button></td></tr>
-            <tr><td class="tid">BK-2403</td><td><strong>Anjali Singh</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 76543 21098</span></td><td><span class="cp cd">Direct</span></td><td>Mumbai Apt.</td><td>Dec 1, 2025</td><td>Dec 5, 2025</td><td>1</td><td><strong>₹28,500</strong></td><td><span class="badge bg">Confirmed</span></td><td><button class="btn btn-o btn-s">View</button></td></tr>
-            <tr><td class="tid">BK-2404</td><td><strong>Vikram Nair</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 65432 10987</span></td><td><span class="cp cv">Voice</span></td><td>Coorg Treehouse</td><td>Dec 8, 2025</td><td>Dec 12, 2025</td><td>3</td><td><strong>₹55,000</strong></td><td><span class="badge bb">Awaiting Payment</span></td><td><button class="btn btn-p btn-s">Pay Now</button></td></tr>
-            <tr><td class="tid">BK-2405</td><td><strong>Sneha Reddy</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 54321 09876</span></td><td><span class="cp ci">Instagram</span></td><td>Jaisalmer Camp</td><td>Dec 20, 2025</td><td>Dec 24, 2025</td><td>6</td><td><strong>₹1,20,000</strong></td><td><span class="badge bg">Confirmed</span></td><td><button class="btn btn-o btn-s">View</button></td></tr>
-            <tr><td class="tid">BK-2406</td><td><strong>Karan Malhotra</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 43210 98765</span></td><td><span class="cp cd">Direct</span></td><td>Goa Beach Villa</td><td>Jan 5, 2026</td><td>Jan 9, 2026</td><td>2</td><td><strong>₹48,000</strong></td><td><span class="badge br">Cancelled</span></td><td><button class="btn btn-o btn-s">View</button></td></tr>
-            <tr><td class="tid">BK-2407</td><td><strong>Nisha Gupta</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 32109 87654</span></td><td><span class="cp ci">Instagram</span></td><td>Manali Cottage</td><td>Jan 12, 2026</td><td>Jan 15, 2026</td><td>5</td><td><strong>₹52,500</strong></td><td><span class="badge by">Pending</span></td><td><button class="btn btn-o btn-s">View</button></td></tr>
-            <tr><td class="tid">BK-2408</td><td><strong>Ritu Bansal</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 21098 76543</span></td><td><span class="cp cd">Direct</span></td><td>Pondicherry Shack</td><td>Jan 20, 2026</td><td>Jan 24, 2026</td><td>2</td><td><strong>₹22,000</strong></td><td><span class="badge bg">Confirmed</span></td><td><button class="btn btn-o btn-s">View</button></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════ LEADS ══════════ -->
-  <div class="page" id="leads">
-    <div class="sh">
-      <div><div class="stl">Leads</div><div class="stl2">84 active · AI handling 72 conversations</div></div>
-      <div style="display:flex;gap:8px"><span class="ai-tag">AI Active</span><button class="btn btn-o">Export</button></div>
-    </div>
-    <div class="g4" style="margin-bottom:16px">
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">New Today</div><div class="sc-val" style="font-size:20px">18</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Qualified</div><div class="sc-val" style="font-size:20px;color:var(--primary)">43</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Converted</div><div class="sc-val" style="font-size:20px;color:var(--green)">29</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Needs Human</div><div class="sc-val" style="font-size:20px;color:var(--red)">5</div></div>
-    </div>
-    <div class="fb">
-      <select class="fsel"><option>All Channels</option><option>Instagram</option><option>Direct</option><option>Voice</option></select>
-      <select class="fsel"><option>All Stages</option><option>New Enquiry</option><option>Availability Checked</option><option>Awaiting Payment</option><option>Qualified</option></select>
-      <select class="fsel"><option>Today</option><option>This Week</option><option>This Month</option></select>
-    </div>
-    <div class="card">
-      <div class="tw">
-        <table>
-          <thead><tr><th>Lead ID</th><th>Guest</th><th>Channel</th><th>Last Message</th><th>Dates</th><th>Budget</th><th>Stage</th><th>AI</th><th></th></tr></thead>
-          <tbody>
-            <tr><td class="tid">LD-8841</td><td><div style="display:flex;align-items:center;gap:8px"><div class="la">SK</div><div><strong>Suresh Kumar</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 91234 56789</span></div></div></td><td><span class="cp ci">Instagram</span></td><td style="max-width:160px;font-size:12px;color:var(--text-2)">"Is Goa beach villa available for Dec 20-25?"</td><td>Dec 20–25</td><td>₹1.2L</td><td><span class="badge by">Enquiry</span></td><td><span class="ai-tag">Handling</span></td><td><button class="btn btn-o btn-s">Open</button></td></tr>
-            <tr><td class="tid">LD-8842</td><td><div style="display:flex;align-items:center;gap:8px"><div class="la">MJ</div><div><strong>Meera Joshi</strong><br><span style="font-size:10.5px;color:var(--text-3)">Instagram DM</span></div></div></td><td><span class="cp ci">Instagram</span></td><td style="max-width:160px;font-size:12px;color:var(--text-2)">"Do you have corporate packages for 10 people?"</td><td>Jan 10–15</td><td>₹3L</td><td><span class="badge bb">Qualified</span></td><td><span class="ai-tag">Handling</span></td><td><button class="btn btn-o btn-s">Open</button></td></tr>
-            <tr><td class="tid">LD-8843</td><td><div style="display:flex;align-items:center;gap:8px"><div class="la" style="background:var(--red-l);color:var(--red)">DR</div><div><strong>Deepak Rao</strong><br><span style="font-size:10.5px;color:var(--text-3)">Meta Form Lead</span></div></div></td><td><span class="cp cd">Direct</span></td><td style="max-width:160px;font-size:12px;color:var(--text-2)">"I filled the Manali form. When can we talk?"</td><td>Dec 25–30</td><td>₹80K</td><td><span class="badge by">Availability Checked</span></td><td><span class="badge br" style="font-size:10px">Needs Human</span></td><td><button class="btn btn-p btn-s">Assign</button></td></tr>
-            <tr><td class="tid">LD-8844</td><td><div style="display:flex;align-items:center;gap:8px"><div class="la">PP</div><div><strong>Pooja Patel</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 80012 34567</span></div></div></td><td><span class="cp cv">Voice</span></td><td style="max-width:160px;font-size:12px;color:var(--text-2)">"Family-friendly property in Manali for Jan?"</td><td>Jan 14–18</td><td>₹90K</td><td><span class="badge bb">Qualified</span></td><td><span class="ai-tag">Handling</span></td><td><button class="btn btn-o btn-s">Open</button></td></tr>
-            <tr><td class="tid">LD-8845</td><td><div style="display:flex;align-items:center;gap:8px"><div class="la">AV</div><div><strong>Aditya Verma</strong><br><span style="font-size:10.5px;color:var(--text-3)">+91 70011 23456</span></div></div></td><td><span class="cp ci">Instagram</span></td><td style="max-width:160px;font-size:12px;color:var(--text-2)">"Sent payment. When will booking confirm?"</td><td>Nov 28–Dec 2</td><td>₹55K</td><td><span class="badge bg">Awaiting Payment</span></td><td><span class="ai-tag">Handling</span></td><td><button class="btn btn-o btn-s">Open</button></td></tr>
-            <tr><td class="tid">LD-8846</td><td><div style="display:flex;align-items:center;gap:8px"><div class="la">RB</div><div><strong>Ritu Bansal</strong><br><span style="font-size:10.5px;color:var(--text-3)">Instagram DM</span></div></div></td><td><span class="cp ci">Instagram</span></td><td style="max-width:160px;font-size:12px;color:var(--text-2)">"What's the max capacity for Coorg property?"</td><td>Feb 1–5</td><td>₹70K</td><td><span class="badge by">Enquiry</span></td><td><span class="ai-tag">Handling</span></td><td><button class="btn btn-o btn-s">Open</button></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════ VOICE CALLS ══════════ -->
-  <div class="page" id="voice">
-    <div class="sh">
-      <div><div class="stl">Voice Calls</div><div class="stl2">Sarvam AI triages and handles all inbound calls</div></div>
-      <span class="ai-tag">Sarvam AI Active</span>
-    </div>
-    <div class="g4" style="margin-bottom:18px">
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Calls Today</div><div class="sc-val" style="font-size:20px">23</div><div class="sc-meta"><span class="up">+8</span> from yesterday</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Handled by AI</div><div class="sc-val" style="font-size:20px">19</div><div class="sc-meta" style="color:var(--green)">83% automation</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Escalated</div><div class="sc-val" style="font-size:20px">4</div><div class="sc-meta">17% escalation rate</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Avg Duration</div><div class="sc-val" style="font-size:20px">3.2m</div><div class="sc-meta"><span class="up">-0.4m</span> vs last week</div></div>
-    </div>
-    <div class="g2">
-      <div class="card">
-        <div class="ch"><div class="ct">Recent Calls</div><span class="badge bg">23 today</span></div>
-        <div class="cb" style="padding:4px 18px 14px">
-          <div class="cr">
-            <div class="ci-ico"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Priya Sharma</div><div style="font-size:11.5px;color:var(--text-3)">+91 98765 43210 · 3m 24s</div></div>
-            <div style="text-align:right"><span class="badge bg">Booking Confirmed</span><div style="font-size:10.5px;color:var(--text-3);margin-top:3px">10:24 AM</div></div>
-          </div>
-          <div class="cr">
-            <div class="ci-ico missed"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Unknown Caller</div><div style="font-size:11.5px;color:var(--text-3)">+91 77665 54432 · Missed</div></div>
-            <div style="text-align:right"><span class="badge br">Missed</span><div style="font-size:10.5px;color:var(--text-3);margin-top:3px">9:58 AM</div></div>
-          </div>
-          <div class="cr">
-            <div class="ci-ico"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Vikram Nair</div><div style="font-size:11.5px;color:var(--text-3)">+91 65432 10987 · 5m 12s</div></div>
-            <div style="text-align:right"><span class="badge by">Escalated to Host</span><div style="font-size:10.5px;color:var(--text-3);margin-top:3px">9:41 AM</div></div>
-          </div>
-          <div class="cr">
-            <div class="ci-ico"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Meera Joshi</div><div style="font-size:11.5px;color:var(--text-3)">+91 80011 22334 · 2m 45s</div></div>
-            <div style="text-align:right"><span class="badge bb">Availability Shared</span><div style="font-size:10.5px;color:var(--text-3);margin-top:3px">9:15 AM</div></div>
-          </div>
-          <div class="cr">
-            <div class="ci-ico"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.18 6.18l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
-            <div style="flex:1"><div style="font-size:12.5px;font-weight:600">Rahul Mehta</div><div style="font-size:11.5px;color:var(--text-3)">+91 87654 32109 · 1m 58s</div></div>
-            <div style="text-align:right"><span class="badge bg">Payment Link Sent</span><div style="font-size:10.5px;color:var(--text-3);margin-top:3px">8:50 AM</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch"><div class="ct">Call Intent Breakdown</div></div>
-        <div class="cb">
-          <div class="cc cc-md"><canvas id="voiceChart"></canvas></div>
-          <div style="margin-top:14px">
-            <div class="legend-row"><span><span class="legend-dot" style="background:#0EA5E9"></span>Booking Enquiry</span><strong>42%</strong></div>
-            <div class="legend-row"><span><span class="legend-dot" style="background:#6366F1"></span>Availability Check</span><strong>28%</strong></div>
-            <div class="legend-row"><span><span class="legend-dot" style="background:#EF4444"></span>Support Issue</span><strong>18%</strong></div>
-            <div class="legend-row"><span><span class="legend-dot" style="background:#F59E0B"></span>Payment Query</span><strong>12%</strong></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════ PROPERTIES ══════════ -->
-  <div class="page" id="properties">
-    <div class="sh">
-      <div><div class="stl">Properties</div><div class="stl2">6 properties · 75.4% avg occupancy</div></div>
-      <button class="btn btn-p"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Property</button>
-    </div>
-    <div class="g3">
-      <div class="prop-card">
-        <div class="pi" style="background:linear-gradient(135deg,#0EA5E9,#06B6D4)">🏖️<div class="pi-badge"><span class="badge bg">Available</span></div></div>
-        <div class="pb">
-          <div class="pn">Goa Beach Villa</div>
-          <div class="pl">Calangute, North Goa · 4BHK</div>
-          <div class="pstats">
-            <div class="pst"><div class="psv">₹12K</div><div class="psl">Per Night</div></div>
-            <div class="pst"><div class="psv">87%</div><div class="psl">Occupancy</div></div>
-            <div class="pst"><div class="psv">4.9 ★</div><div class="psl">Rating</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="prop-card">
-        <div class="pi" style="background:linear-gradient(135deg,#6366F1,#8B5CF6)">🏔️<div class="pi-badge"><span class="badge bg">Available</span></div></div>
-        <div class="pb">
-          <div class="pn">Manali Pine Cottage</div>
-          <div class="pl">Old Manali, HP · 3BHK</div>
-          <div class="pstats">
-            <div class="pst"><div class="psv">₹8.5K</div><div class="psl">Per Night</div></div>
-            <div class="pst"><div class="psv">74%</div><div class="psl">Occupancy</div></div>
-            <div class="pst"><div class="psv">4.7 ★</div><div class="psl">Rating</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="prop-card">
-        <div class="pi" style="background:linear-gradient(135deg,#F59E0B,#EF4444)">🏛️<div class="pi-badge"><span class="badge br">Booked</span></div></div>
-        <div class="pb">
-          <div class="pn">Mumbai Bandra Apartment</div>
-          <div class="pl">Bandra West, Mumbai · 2BHK</div>
-          <div class="pstats">
-            <div class="pst"><div class="psv">₹6.5K</div><div class="psl">Per Night</div></div>
-            <div class="pst"><div class="psv">92%</div><div class="psl">Occupancy</div></div>
-            <div class="pst"><div class="psv">4.8 ★</div><div class="psl">Rating</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="prop-card">
-        <div class="pi" style="background:linear-gradient(135deg,#10B981,#059669)">🌿<div class="pi-badge"><span class="badge bg">Available</span></div></div>
-        <div class="pb">
-          <div class="pn">Coorg Coffee Treehouse</div>
-          <div class="pl">Madikeri, Coorg · 2BHK</div>
-          <div class="pstats">
-            <div class="pst"><div class="psv">₹9.5K</div><div class="psl">Per Night</div></div>
-            <div class="pst"><div class="psv">68%</div><div class="psl">Occupancy</div></div>
-            <div class="pst"><div class="psv">4.9 ★</div><div class="psl">Rating</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="prop-card">
-        <div class="pi" style="background:linear-gradient(135deg,#F97316,#EAB308)">🏕️<div class="pi-badge"><span class="badge by">Partial</span></div></div>
-        <div class="pb">
-          <div class="pn">Jaisalmer Desert Camp</div>
-          <div class="pl">Sam Sand Dunes, Rajasthan · 6 Tents</div>
-          <div class="pstats">
-            <div class="pst"><div class="psv">₹4.5K</div><div class="psl">Per Tent</div></div>
-            <div class="pst"><div class="psv">55%</div><div class="psl">Occupancy</div></div>
-            <div class="pst"><div class="psv">4.6 ★</div><div class="psl">Rating</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="prop-card">
-        <div class="pi" style="background:linear-gradient(135deg,#6366F1,#EC4899)">🌊<div class="pi-badge"><span class="badge bg">Available</span></div></div>
-        <div class="pb">
-          <div class="pn">Pondicherry Beach Shack</div>
-          <div class="pl">Promenade Beach, Pondy · 1BHK</div>
-          <div class="pstats">
-            <div class="pst"><div class="psv">₹5.5K</div><div class="psl">Per Night</div></div>
-            <div class="pst"><div class="psv">61%</div><div class="psl">Occupancy</div></div>
-            <div class="pst"><div class="psv">4.5 ★</div><div class="psl">Rating</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══════════ FOLLOW-UPS ══════════ -->
-  <div class="page" id="followups">
-    <div class="sh">
-      <div><div class="stl">Follow-ups</div><div class="stl2">Auto-scheduled every 2 hours by AI · 8 pending</div></div>
-      <div style="display:flex;gap:8px"><span class="ai-tag">Sarvam AI</span><button class="btn btn-o">Run Now</button></div>
-    </div>
-    <div class="g2" style="margin-bottom:18px">
-      <div class="card">
-        <div class="ch"><div class="ct">Pending Follow-ups</div><span class="badge by">8 Due</span></div>
-        <div class="cb" style="padding:0 16px">
-          <div class="fu"><div class="dot dr"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Suresh Kumar</div><div style="font-size:11.5px;color:var(--text-3)">Goa enquiry — 18h no reply</div></div><span class="cp ci">Instagram</span><button class="btn btn-p btn-s">Send</button></div>
-          <div class="fu"><div class="dot dr"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Meera Joshi</div><div style="font-size:11.5px;color:var(--text-3)">Corporate package — 12h no reply</div></div><span class="cp ci">Instagram</span><button class="btn btn-p btn-s">Send</button></div>
-          <div class="fu"><div class="dot dy"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Deepak Rao</div><div style="font-size:11.5px;color:var(--text-3)">Payment pending — 8h</div></div><span class="cp cd">Direct</span><button class="btn btn-p btn-s">Send</button></div>
-          <div class="fu"><div class="dot dy"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Pooja Patel</div><div style="font-size:11.5px;color:var(--text-3)">Manali dates not confirmed</div></div><span class="cp cv">Voice</span><button class="btn btn-p btn-s">Send</button></div>
-          <div class="fu"><div class="dot dg"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Aditya Verma</div><div style="font-size:11.5px;color:var(--text-3)">Check-in reminder — 2 days prior</div></div><span class="cp ci">Instagram</span><button class="btn btn-p btn-s">Send</button></div>
-          <div class="fu"><div class="dot dy"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Karan Malhotra</div><div style="font-size:11.5px;color:var(--text-3)">Reschedule interest — Goa Jan</div></div><span class="cp cd">Direct</span><button class="btn btn-p btn-s">Send</button></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="ch"><div class="ct">Sent Today</div><span class="badge bg">14 Sent</span></div>
-        <div class="cb" style="padding:0 16px">
-          <div class="fu"><div class="dot dg"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Ritu Bansal</div><div style="font-size:11.5px;color:var(--text-3)">"Hi Ritu! Just checking in on your Coorg dates…"</div></div><span style="font-size:11px;color:var(--text-3)">10:15 AM</span></div>
-          <div class="fu"><div class="dot dg"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Karan Malhotra</div><div style="font-size:11.5px;color:var(--text-3)">"Your preferred dates are still open for Jan…"</div></div><span style="font-size:11px;color:var(--text-3)">9:30 AM</span></div>
-          <div class="fu"><div class="dot dg"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Sneha Reddy</div><div style="font-size:11.5px;color:var(--text-3)">"Booking confirmed! Here are your check-in details…"</div></div><span style="font-size:11px;color:var(--text-3)">8:45 AM</span></div>
-          <div class="fu"><div class="dot dg"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Nisha Gupta</div><div style="font-size:11.5px;color:var(--text-3)">"Limited Manali slots available for Jan — grab yours!"</div></div><span style="font-size:11px;color:var(--text-3)">8:00 AM</span></div>
-          <div class="fu"><div class="dot dg"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:600">Anjali Singh</div><div style="font-size:11.5px;color:var(--text-3)">"Your Mumbai stay is coming up — any special requests?"</div></div><span style="font-size:11px;color:var(--text-3)">7:30 AM</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="ch"><div class="ct">Follow-up Performance</div><div class="cs">Last 30 days</div></div>
-      <div class="cb"><div class="cc" style="height:200px"><canvas id="fuChart"></canvas></div></div>
-    </div>
-  </div>
-
-  <!-- ══════════ PRICING ══════════ -->
-  <div class="page" id="pricing">
-    <div class="sh">
-      <div><div class="stl">AI Pricing</div><div class="stl2">Daily recommendations at 5:15 AM · Requires host approval</div></div>
-      <span class="ai-tag">Sarvam Revenue AI</span>
-    </div>
-    <div class="card" style="margin-bottom:18px">
-      <div class="ch"><div class="ct">Today's Pricing Recommendations</div><span style="font-size:12px;color:var(--text-3)">Generated Sep 1, 2026 · 5:15 AM</span></div>
-      <div class="tw">
-        <table>
-          <thead><tr><th>Property</th><th>Current Price</th><th>AI Recommended</th><th>Change</th><th>Reason</th><th>Confidence</th><th>Action</th></tr></thead>
-          <tbody>
-            <tr>
-              <td><strong>Goa Beach Villa</strong></td><td>₹12,000</td>
-              <td style="color:var(--green);font-weight:700">₹14,500</td>
-              <td><span class="badge bg">+20.8%</span></td>
-              <td style="font-size:11.5px;color:var(--text-2);max-width:180px">Diwali long weekend + high demand. Comparable listings at ₹15–16K.</td>
-              <td><div style="display:flex;align-items:center;gap:7px"><div class="pr" style="width:70px"><div class="prf" style="width:88%;background:var(--green)"></div></div><span style="font-size:11.5px;font-weight:600">88%</span></div></td>
-              <td style="display:flex;gap:5px"><button class="btn btn-p btn-s">Approve</button><button class="btn btn-o btn-s">Reject</button></td>
-            </tr>
-            <tr>
-              <td><strong>Manali Pine Cottage</strong></td><td>₹8,500</td>
-              <td style="color:var(--green);font-weight:700">₹9,200</td>
-              <td><span class="badge bg">+8.2%</span></td>
-              <td style="font-size:11.5px;color:var(--text-2);max-width:180px">Winter season approaching. Moderate demand uptick in hill stations.</td>
-              <td><div style="display:flex;align-items:center;gap:7px"><div class="pr" style="width:70px"><div class="prf" style="width:72%"></div></div><span style="font-size:11.5px;font-weight:600">72%</span></div></td>
-              <td style="display:flex;gap:5px"><button class="btn btn-p btn-s">Approve</button><button class="btn btn-o btn-s">Reject</button></td>
-            </tr>
-            <tr>
-              <td><strong>Mumbai Bandra Apt.</strong></td><td>₹6,500</td>
-              <td style="color:var(--text-2);font-weight:700">₹6,500</td>
-              <td><span class="badge bgr">No Change</span></td>
-              <td style="font-size:11.5px;color:var(--text-2);max-width:180px">Already at market rate. Occupancy 92% — hold current price.</td>
-              <td><div style="display:flex;align-items:center;gap:7px"><div class="pr" style="width:70px"><div class="prf" style="width:95%;background:var(--green)"></div></div><span style="font-size:11.5px;font-weight:600">95%</span></div></td>
-              <td><span class="badge bgr">Auto-applied</span></td>
-            </tr>
-            <tr>
-              <td><strong>Coorg Coffee Treehouse</strong></td><td>₹9,500</td>
-              <td style="color:var(--red);font-weight:700">₹8,000</td>
-              <td><span class="badge br">-15.8%</span></td>
-              <td style="font-size:11.5px;color:var(--text-2);max-width:180px">Low occupancy (68%). Price reduction may improve Nov bookings.</td>
-              <td><div style="display:flex;align-items:center;gap:7px"><div class="pr" style="width:70px"><div class="prf" style="width:61%;background:var(--amber)"></div></div><span style="font-size:11.5px;font-weight:600">61%</span></div></td>
-              <td style="display:flex;gap:5px"><button class="btn btn-p btn-s">Approve</button><button class="btn btn-o btn-s">Reject</button></td>
-            </tr>
-            <tr>
-              <td><strong>Jaisalmer Desert Camp</strong></td><td>₹4,500</td>
-              <td style="color:var(--green);font-weight:700">₹5,800</td>
-              <td><span class="badge bg">+28.9%</span></td>
-              <td style="font-size:11.5px;color:var(--text-2);max-width:180px">Peak winter season + New Year demand. Tourism spike expected in Dec.</td>
-              <td><div style="display:flex;align-items:center;gap:7px"><div class="pr" style="width:70px"><div class="prf" style="width:84%;background:var(--green)"></div></div><span style="font-size:11.5px;font-weight:600">84%</span></div></td>
-              <td style="display:flex;gap:5px"><button class="btn btn-p btn-s">Approve</button><button class="btn btn-o btn-s">Reject</button></td>
-            </tr>
-            <tr>
-              <td><strong>Pondicherry Shack</strong></td><td>₹5,500</td>
-              <td style="color:var(--green);font-weight:700">₹6,200</td>
-              <td><span class="badge bg">+12.7%</span></td>
-              <td style="font-size:11.5px;color:var(--text-2);max-width:180px">December beach season. Demand increasing from Chennai travellers.</td>
-              <td><div style="display:flex;align-items:center;gap:7px"><div class="pr" style="width:70px"><div class="prf" style="width:77%"></div></div><span style="font-size:11.5px;font-weight:600">77%</span></div></td>
-              <td style="display:flex;gap:5px"><button class="btn btn-p btn-s">Approve</button><button class="btn btn-o btn-s">Reject</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div class="ch"><div class="ct">Price History — Goa Beach Villa</div><div class="cs">Actual vs AI Recommended</div></div>
-      <div class="cb"><div class="cc" style="height:240px"><canvas id="pxChart"></canvas></div></div>
-    </div>
-  </div>
-
-  <!-- ══════════ REVIEWS ══════════ -->
-  <div class="page" id="reviews">
-    <div class="sh">
-      <div><div class="stl">Reviews & Reputation</div><div class="stl2">AI replies automatically · Avg rating: 4.87</div></div>
-      <span class="ai-tag">Sarvam Review AI</span>
-    </div>
-    <div class="g4" style="margin-bottom:18px">
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Total Reviews</div><div class="sc-val" style="font-size:20px">312</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">5-Star Reviews</div><div class="sc-val" style="font-size:20px;color:var(--green)">218</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Needs Staff Review</div><div class="sc-val" style="font-size:20px;color:var(--red)">4</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Auto-replied</div><div class="sc-val" style="font-size:20px">286</div><div style="font-size:11px;color:var(--green)">91.7% automation</div></div>
-    </div>
-
-    <div class="rv">
-      <div class="rv-hd">
-        <div><div class="rv-n">Priya Sharma</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div class="stars">★★★★★</div><span style="font-size:11.5px;color:var(--text-3)">Goa Beach Villa</span></div></div>
-        <div style="text-align:right"><div class="rv-d">Nov 20, 2025</div><span class="badge bg" style="margin-top:4px">5 Stars</span></div>
-      </div>
-      <div class="rv-t">"Absolutely stunning property! The beach view was breathtaking and the host was incredibly responsive. Would definitely come back again!"</div>
-      <div class="rv-rep"><div class="rv-rl">Host Reply — AI Generated</div><div class="rv-rt">"Thank you so much, Priya! We're thrilled you enjoyed your stay at our Goa Beach Villa. The sea-view mornings are truly something special. We'd love to welcome you back anytime!"</div></div>
-    </div>
-
-    <div class="rv">
-      <div class="rv-hd">
-        <div><div class="rv-n">Rahul Mehta</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div class="stars">★★★★☆</div><span style="font-size:11.5px;color:var(--text-3)">Manali Pine Cottage</span></div></div>
-        <div style="text-align:right"><div class="rv-d">Nov 28, 2025</div><span class="badge by" style="margin-top:4px">4 Stars</span></div>
-      </div>
-      <div class="rv-t">"Great property in a beautiful location. Warm and cozy cottage. Minor issue with hot water in the morning, fixed quickly by the team. Overall a wonderful stay."</div>
-      <div class="rv-rep"><div class="rv-rl">Host Reply — AI Generated</div><div class="rv-rt">"Thank you for your kind words, Rahul! We apologise for the brief inconvenience with the hot water and are glad our team resolved it promptly. We've since upgraded the geyser. Hope to host you again at Manali!"</div></div>
-    </div>
-
-    <div class="rv neg">
-      <div class="rv-hd">
-        <div><div class="rv-n">Anonymous Guest</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div class="stars">★★☆☆☆</div><span style="font-size:11.5px;color:var(--text-3)">Mumbai Bandra Apt.</span></div></div>
-        <div style="text-align:right"><div class="rv-d">Dec 1, 2025</div><div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px"><span class="badge br">2 Stars</span><span class="badge by">Staff Review</span></div></div>
-      </div>
-      <div class="rv-t">"The apartment was smaller than expected. The photos were misleading. Air conditioning was not working on arrival. Not satisfied with the experience."</div>
-      <div class="rv-warn"><div class="rv-wl">Pending — Staff Action Required</div><div class="rv-wt">AI flagged for human review. Draft reply ready for approval before publish. Manager has been notified.</div></div>
-    </div>
-
-    <div class="rv">
-      <div class="rv-hd">
-        <div><div class="rv-n">Anjali Singh</div><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><div class="stars">★★★★★</div><span style="font-size:11.5px;color:var(--text-3)">Coorg Coffee Treehouse</span></div></div>
-        <div style="text-align:right"><div class="rv-d">Dec 6, 2025</div><span class="badge bg" style="margin-top:4px">5 Stars</span></div>
-      </div>
-      <div class="rv-t">"This place is magical! Woke up to coffee plantation views every morning. The treehouse experience was unlike anything else. Perfect for a romantic escape from city life."</div>
-      <div class="rv-rep"><div class="rv-rl">Host Reply — AI Generated</div><div class="rv-rt">"Thank you, Anjali! The Coorg mornings truly have a magic of their own. We're delighted you loved the treehouse and the coffee estate views. Can't wait to host you again!"</div></div>
-    </div>
-  </div>
-
-  <!-- ══════════ SUPPORT ══════════ -->
-  <div class="page" id="support">
-    <div class="sh">
-      <div><div class="stl">Support Tickets</div><div class="stl2">3 open · 2 urgent · AI triages from all channels</div></div>
-      <button class="btn btn-o"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Ticket</button>
-    </div>
-    <div class="g4" style="margin-bottom:18px">
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Open Tickets</div><div class="sc-val" style="font-size:20px;color:var(--red)">3</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Resolved Today</div><div class="sc-val" style="font-size:20px;color:var(--green)">8</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Avg Resolution</div><div class="sc-val" style="font-size:20px">2.4h</div></div>
-      <div class="sc" style="padding:13px 16px"><div class="sc-lbl">Human Escalations</div><div class="sc-val" style="font-size:20px">2</div></div>
-    </div>
-
-    <div style="margin-bottom:6px;font-size:12.5px;font-weight:600;color:var(--text-2)">Open</div>
-    <div class="tk">
-      <div class="tkp tkh"></div>
-      <div class="tk-info">
-        <div class="tk-t">AC not working — Vikram Nair · Coorg Treehouse</div>
-        <div class="tk-m">TK-5501 · Voice Call · Opened 2h ago · <strong>High Priority</strong></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="badge br">Open</span><span style="font-size:10.5px;color:var(--text-3)">Escalated to Host</span></div>
-      <button class="btn btn-o btn-s">Resolve</button>
-    </div>
-    <div class="tk">
-      <div class="tkp tkh"></div>
-      <div class="tk-info">
-        <div class="tk-t">Refund request — Anonymous Guest · Mumbai Apt.</div>
-        <div class="tk-m">TK-5502 · Review · Opened 5h ago · <strong>Urgent — Policy Exception</strong></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="badge br">Open</span><span style="font-size:10.5px;color:var(--text-3)">Manager Review Needed</span></div>
-      <button class="btn btn-o btn-s">Resolve</button>
-    </div>
-    <div class="tk">
-      <div class="tkp tkm"></div>
-      <div class="tk-info">
-        <div class="tk-t">Early check-in request — Sneha Reddy · Jaisalmer Camp</div>
-        <div class="tk-m">TK-5503 · Instagram · Opened 8h ago · <strong>Medium Priority</strong></div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px"><span class="badge by">Pending</span><span style="font-size:10.5px;color:var(--text-3)">Awaiting host response</span></div>
-      <button class="btn btn-o btn-s">Resolve</button>
-    </div>
-
-    <div class="div"></div>
-    <div style="margin-bottom:10px;font-size:12.5px;font-weight:600;color:var(--text-3)">Resolved Today</div>
-
-    <div class="tk" style="opacity:.6">
-      <div class="tkp tkl"></div>
-      <div class="tk-info"><div class="tk-t">Check-in code not received — Anjali Singh · Mumbai Apt.</div><div class="tk-m">TK-5498 · Instagram · Resolved in 0.5h by AI</div></div>
-      <span class="badge bg">Resolved</span>
-    </div>
-    <div class="tk" style="opacity:.6">
-      <div class="tkp tkl"></div>
-      <div class="tk-info"><div class="tk-t">WiFi password request — Priya Sharma · Goa Villa</div><div class="tk-m">TK-5497 · Voice · Resolved in 1h by AI</div></div>
-      <span class="badge bg">Resolved</span>
-    </div>
-    <div class="tk" style="opacity:.6">
-      <div class="tkp tkm"></div>
-      <div class="tk-info"><div class="tk-t">Booking cancellation — Karan Malhotra · Goa Villa</div><div class="tk-m">TK-5496 · Instagram · Resolved in 3.5h · Partial refund processed</div></div>
-      <span class="badge bg">Resolved</span>
-    </div>
-    <div class="tk" style="opacity:.6">
-      <div class="tkp tkl"></div>
-      <div class="tk-info"><div class="tk-t">Housekeeping complaint — Meera Joshi · Manali</div><div class="tk-m">TK-5495 · Instagram · Resolved in 2h · Cleaning team dispatched</div></div>
-      <span class="badge bg">Resolved</span>
-    </div>
-  </div>
-
-  </div><!-- /content -->
-</div><!-- /main -->
+  <div class="foot" id="foot"></div>
+</div>
 
 <script>
-// ── NAVIGATION ──
-const titles={dashboard:'Dashboard',bookings:'Bookings',leads:'Leads',voice:'Voice Calls',properties:'Properties',followups:'Follow-ups',pricing:'AI Pricing',reviews:'Reviews & Reputation',support:'Support Tickets'};
-
-function nav(id,el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-it').forEach(n=>n.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  if(el) el.classList.add('active');
-  document.getElementById('pg-title').textContent=titles[id]||id;
-  const cbs={dashboard:initDash,voice:initVoice,pricing:initPricing,followups:initFollowups};
-  if(cbs[id]){ try{ cbs[id](); }catch(e){ console.warn('[bougainvilla] chart init failed:',id,e.message); } }
-}
-
-// ── CHART REGISTRY ──
-const CI={};
-function mkChart(id,cfg){
-  if(CI[id])return;
-  // The Chart.js CDN can be blocked or slow. A missing chart must never stop
-  // the rest of the page — least of all the live-data fetch.
-  if(typeof Chart==='undefined'){console.warn('[bougainvilla] Chart.js unavailable, skipping',id);return;}
-  const c=document.getElementById(id);if(!c)return;
-  try{CI[id]=new Chart(c.getContext('2d'),cfg);}catch(e){console.warn('[bougainvilla] chart failed:',id,e.message);}
-}
-
-const baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
-const xNoGrid={grid:{display:false},ticks:{font:{size:11},color:'#94A3B8'}};
-const yLight={grid:{color:'#F1F5F9'},ticks:{font:{size:11},color:'#94A3B8'}};
-
-// ── DASHBOARD CHARTS ──
-function initDash(){
-  mkChart('revChart',{type:'bar',data:{labels:['May','Jun','Jul','Aug','Sep','Oct','Nov'],datasets:[{label:'Revenue',data:[9.2,11.4,13.8,15.2,12.6,16.4,18.4],backgroundColor:'rgba(14,165,233,0.12)',borderColor:'#0EA5E9',borderWidth:2,borderRadius:7,borderSkipped:false}]},options:{...baseOpts,scales:{y:{...yLight,ticks:{...yLight.ticks,callback:v=>'₹'+v+'L'}},x:xNoGrid}}});
-  mkChart('chChart',{type:'doughnut',data:{labels:['Instagram','Direct','Voice'],datasets:[{data:[58,27,15],backgroundColor:['#E1306C','#8B5CF6','#F59E0B'],borderWidth:0,hoverOffset:6}]},options:{...baseOpts,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+'%'}}}}});
-}
-
-// ── VOICE CHART ──
-function initVoice(){
-  mkChart('voiceChart',{type:'doughnut',data:{labels:['Booking Enquiry','Availability Check','Support Issue','Payment Query'],datasets:[{data:[42,28,18,12],backgroundColor:['#0EA5E9','#6366F1','#EF4444','#F59E0B'],borderWidth:0,hoverOffset:6}]},options:{...baseOpts,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+'%'}}}}});
-}
-
-// ── PRICING CHART ──
-function initPricing(){
-  mkChart('pxChart',{type:'line',data:{labels:['May','Jun','Jul','Aug','Sep','Oct','Nov'],datasets:[{label:'Actual Price',data:[10000,10500,12000,13500,12000,11500,14500],borderColor:'#0EA5E9',backgroundColor:'rgba(14,165,233,0.08)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#0EA5E9'},{label:'AI Recommended',data:[10200,11000,12500,14000,12200,12000,14500],borderColor:'#8B5CF6',borderDash:[5,5],fill:false,tension:0.4,pointRadius:4,pointBackgroundColor:'#8B5CF6'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:{size:12},usePointStyle:true,pointStyleWidth:10}},tooltip:{callbacks:{label:c=>c.dataset.label+': ₹'+c.parsed.y.toLocaleString()}}},scales:{y:{...yLight,ticks:{...yLight.ticks,callback:v=>'₹'+v.toLocaleString()}},x:xNoGrid}}});
-}
-
-// ── FOLLOW-UPS CHART ──
-function initFollowups(){
-  mkChart('fuChart',{type:'bar',data:{labels:['Week 1','Week 2','Week 3','Week 4'],datasets:[{label:'Sent',data:[42,58,67,71],backgroundColor:'rgba(14,165,233,0.15)',borderColor:'#0EA5E9',borderWidth:2,borderRadius:5},{label:'Replied',data:[28,39,51,58],backgroundColor:'rgba(16,185,129,0.15)',borderColor:'#10B981',borderWidth:2,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'top',labels:{font:{size:11},usePointStyle:true}}},scales:{y:{...yLight},x:xNoGrid}}});
-}
-
-// ── LIVE DATA ──────────────────────────────────────────────────────────
-// Reads /api/metrics (a Vercel function that proxies the n8n
-// `bougainvilla-dashboard` webhook so the shared key stays server-side).
-// If n8n is unreachable the page keeps its demo numbers and says so.
-
-const STATUS_CLASS = {confirmed:'bg', booked:'bg', pending:'by', awaiting_payment:'bb',
-                      enquiry:'bb', cancelled:'br', support:'by'};
-
-// Three states, because "no data" has two very different causes and they
-// need different fixes:
-//   live    - n8n answered and the CRM returned metrics
-//   no_crm  - n8n answered, but CRM_METRICS_URL is not connected yet
-//   offline - n8n could not be reached at all
-function setConnection(state, label){
-  const pulse = document.getElementById('conn-pulse');
-  const text  = document.getElementById('conn-label');
-  const badge = document.getElementById('data-badge');
-  const colour = { live:'var(--green)', no_crm:'var(--amber)', offline:'var(--red)' }[state];
-  if(text)  text.textContent = label;
-  if(pulse) pulse.style.background = colour || 'var(--amber)';
-  if(badge){
-    badge.textContent = state === 'live' ? 'Live' : 'Demo';
-    badge.className = 'badge ' + (state === 'live' ? 'bb' : 'by');
-  }
-}
-
-function setText(id, value){
-  if(value === null || value === undefined) return;
-  const el = document.getElementById(id);
-  if(el) el.textContent = value;
-}
-
-const lakhs = n => '₹' + (Number(n)/100000).toFixed(1) + 'L';
+// ── helpers ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-function applyMetrics(d){
-  const s = d.stats || {};
-  setText('stat-bookings', s.total_bookings);
-  setText('stat-leads',    s.active_leads);
-  if(s.revenue_mtd != null) setText('stat-revenue', lakhs(s.revenue_mtd));
-  if(s.avg_rating  != null) setText('stat-rating',  Number(s.avg_rating).toFixed(2));
-
-  const ch = d.channels || {};
-  const chOrder = ['instagram','direct','voice'];
-  chOrder.forEach(k => {
-    if(ch[k] != null) setText('ch-' + k, ch[k] + '%');
-  });
-  if(CI.chChart && chOrder.every(k => ch[k] != null)){
-    CI.chChart.data.datasets[0].data = chOrder.map(k => ch[k]);
-    CI.chChart.update();
-  }
-
-  const rs = d.revenue_series || {};
-  if(CI.revChart && Array.isArray(rs.labels) && Array.isArray(rs.values)){
-    CI.revChart.data.labels = rs.labels;
-    CI.revChart.data.datasets[0].data = rs.values.map(v => Number(v)/100000);
-    CI.revChart.update();
-  }
-
-  const tb = document.getElementById('recent-bookings');
-  if(tb && Array.isArray(d.recent_bookings) && d.recent_bookings.length){
-    tb.innerHTML = d.recent_bookings.map(b => {
-      const key = String(b.status || '').toLowerCase().replace(/\s+/g,'_');
-      return '<tr><td><strong>' + esc(b.guest_name) + '</strong></td>' +
-             '<td>' + esc(b.property) + '</td>' +
-             '<td>' + esc(b.dates) + '</td>' +
-             '<td><span class="badge ' + (STATUS_CLASS[key] || 'bb') + '">' +
-             esc(b.status) + '</span></td></tr>';
-    }).join('');
-  }
+function ago(iso){
+  if(!iso) return '';
+  const secs = (Date.now() - new Date(iso).getTime()) / 1000;
+  if(secs < 90) return 'just now';
+  if(secs < 3600) return Math.round(secs/60) + 'm ago';
+  if(secs < 86400) return Math.round(secs/3600) + 'h ago';
+  return Math.round(secs/86400) + 'd ago';
 }
 
-async function loadMetrics(){
+function setStatus(kind, text){
+  $('dot').className = 'dot ' + kind;
+  $('status-text').textContent = text;
+}
+
+// ── bar chart, inline SVG ───────────────────────────────────────────
+// Discrete daily counts, so bars rather than a line. One series, so no
+// legend — the card title names it. Only the peak is labelled; a number
+// on every bar is noise.
+function drawBars(labels, values){
+  const wrap = $('chart-wrap');
+  const total = values.reduce((a,b) => a + Number(b || 0), 0);
+
+  if(!labels.length || total === 0){
+    wrap.innerHTML = '<div class="empty"><div class="empty-title">No messages yet</div>' +
+      '<div class="empty-note">This fills in as guests DM the villa on Instagram.</div></div>';
+    return;
+  }
+
+  const W = 720, H = 180, padL = 26, padR = 8, padT = 18, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const max = Math.max(...values.map(Number), 1);
+  const slot = plotW / values.length;
+  const gap = 2;                       // 2px surface gap between bars
+  // thin marks: cap the width and centre in the slot, so a sparse series
+  // does not render as a few enormous slabs
+  const bw = Math.min(26, Math.max(6, slot - gap));
+  const inset = (slot - bw) / 2;
+  const peak = values.indexOf(max);
+
+  let svg = `<svg class="bars" viewBox="0 0 ${W} ${H}" role="img"
+    aria-label="Messages received per day for the last 14 days">`;
+  svg += `<line class="axis-line" x1="${padL}" y1="${padT+plotH}" x2="${W-padR}" y2="${padT+plotH}"/>`;
+  svg += `<text class="axis-text" x="${padL-6}" y="${padT+5}" text-anchor="end">${max}</text>`;
+  svg += `<text class="axis-text" x="${padL-6}" y="${padT+plotH}" text-anchor="end">0</text>`;
+
+  values.forEach((v, i) => {
+    const n = Number(v || 0);
+    const h = n === 0 ? 0 : Math.max(3, (n / max) * plotH);
+    const x = padL + i * slot + inset;
+    const y = padT + plotH - h;
+    if(h > 0){
+      // 4px rounded data-end, anchored square to the baseline
+      const r = Math.min(4, h);
+      svg += `<path class="bar" d="M${x},${y+h} L${x},${y+r} Q${x},${y} ${x+r},${y}
+        L${x+bw-r},${y} Q${x+bw},${y} ${x+bw},${y+r} L${x+bw},${y+h} Z"/>`;
+    }
+    svg += `<rect class="bar-hit" x="${x}" y="${padT}" width="${bw}" height="${plotH}">
+      <title>${esc(labels[i])} — ${n} message${n===1?'':'s'}</title></rect>`;
+    if(i === peak && n > 0){
+      svg += `<text class="bar-label" x="${x+bw/2}" y="${y-5}" text-anchor="middle">${n}</text>`;
+    }
+    if(i === 0 || i === values.length - 1 || i === Math.floor(values.length/2)){
+      svg += `<text class="axis-text" x="${x+bw/2}" y="${H-8}" text-anchor="middle">${esc(labels[i])}</text>`;
+    }
+  });
+  svg += '</svg>';
+  wrap.innerHTML = svg;
+}
+
+// ── render ──────────────────────────────────────────────────────────
+function renderMetrics(d){
+  const s = d.stats || {};
+  const n = v => (v === null || v === undefined) ? '—' : Number(v).toLocaleString('en-IN');
+
+  $('t-conversations').textContent = n(s.conversations);
+  $('t-active').textContent        = n(s.active_leads);
+  $('t-today').textContent         = n(s.messages_today);
+  $('t-human').textContent         = n(s.needs_human);
+  $('tile-human').classList.toggle('zero', !Number(s.needs_human));
+
+  const series = d.message_series || {};
+  drawBars(series.labels || [], series.values || []);
+
+  $('flow').innerHTML =
+    `<div class="flow-item"><span class="flow-num">${n(s.messages_in)}</span>
+       <span class="flow-lab">received</span></div>
+     <div class="flow-item"><span class="flow-num">${n(s.messages_out)}</span>
+       <span class="flow-lab">replies sent</span></div>
+     <div class="flow-item"><span class="flow-num">${n(s.total_leads)}</span>
+       <span class="flow-lab">guests total</span></div>`;
+
+  const leads = Array.isArray(d.recent_leads) ? d.recent_leads : [];
+  $('recent-count').textContent = leads.length ? `${leads.length} most recent` : '';
+
+  if(!leads.length){
+    $('recent-body').innerHTML =
+      '<div class="empty"><div class="empty-title">No conversations yet</div>' +
+      '<div class="empty-note">Send a DM to the villa\'s Instagram account and it will appear here ' +
+      'within a minute.</div></div>';
+    return;
+  }
+
+  $('recent-body').innerHTML =
+    `<table><thead><tr><th>Guest</th><th>Last message</th><th>Stage</th>
+      <th>Status</th><th>Last seen</th></tr></thead><tbody>` +
+    leads.map(l => {
+      const flagged = l.needs_human;
+      return `<tr>
+        <td class="who">${esc(l.display_name || 'Guest ' + String(l.sender_id || '').slice(-4))}</td>
+        <td class="msg">${esc(l.last_message || '—')}</td>
+        <td><span class="badge neutral">${esc(l.lead_stage || 'new')}</span></td>
+        <td><span class="badge ${flagged ? 'wait' : 'ok'}">${flagged ? 'Needs a human' : 'Agent handling'}</span></td>
+        <td class="when">${esc(ago(l.last_seen_at))}</td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+function showBlank(){
+  ['t-conversations','t-active','t-today','t-human'].forEach(id => $(id).textContent = '—');
+  drawBars([], []);
+  $('flow').innerHTML = '';
+  $('recent-body').innerHTML = '';
+}
+
+// ── load ────────────────────────────────────────────────────────────
+async function load(){
   try{
     const res = await fetch('/api/metrics', {headers:{accept:'application/json'}});
-    if(!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
 
-    if(d.source === 'crm'){
-      applyMetrics(d);
-      setConnection('live', 'Live — n8n connected');
-    }else if(d.source === 'no_crm'){
-      // n8n is reachable; there is simply no CRM behind it yet.
-      setConnection('no_crm', 'n8n connected · CRM not linked');
+    if(d.source === 'supabase'){
+      renderMetrics(d);
+      setStatus('live', 'Live');
+      $('foot').textContent = 'Updated ' + new Date().toLocaleTimeString('en-IN',
+        {hour:'2-digit', minute:'2-digit'}) + ' · refreshes every minute';
+      return;
+    }
+
+    showBlank();
+    if(d.source === 'no_db'){
+      setStatus('warn', 'n8n connected · database not set up');
+      $('recent-body').innerHTML = '<div class="empty"><div class="empty-title">Database not connected</div>' +
+        '<div class="empty-note">n8n is reachable but Supabase is not answering. Run ' +
+        '<code>supabase/schema.sql</code> and check the Supabase credential in n8n.</div></div>';
     }else{
-      setConnection('offline', 'Demo data — n8n not reachable');
+      setStatus('crit', 'n8n not reachable');
+      $('recent-body').innerHTML = '<div class="empty"><div class="empty-title">Cannot reach n8n</div>' +
+        '<div class="empty-note">Check <code>N8N_DASHBOARD_URL</code> and <code>DASHBOARD_API_KEY</code> ' +
+        'in the Vercel project, and that the workflow is active.</div></div>';
       console.warn('[bougainvilla] /api/metrics:', d.error || 'unknown');
     }
+    $('foot').textContent = '';
   }catch(err){
-    console.warn('[bougainvilla] falling back to demo data:', err.message);
-    setConnection('offline', 'Demo data — n8n not reachable');
+    showBlank();
+    setStatus('crit', 'n8n not reachable');
+    console.warn('[bougainvilla]', err.message);
   }
 }
 
-// ── INIT ──
-window.onload = () => {
-  try{ initDash(); }catch(e){ console.warn('[bougainvilla] chart init failed:', e.message); }
-  loadMetrics();
-  setInterval(loadMetrics, 60000);
-};
+load();
+setInterval(load, 60000);
 </script>
 </body>
 </html>

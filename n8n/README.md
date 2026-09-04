@@ -16,7 +16,7 @@ Secrets: [../docs/n8n-credentials.md](../docs/n8n-credentials.md)
 | Follow-up scheduler (2-hourly) | Pulls due leads → one AI message each → sends |
 | Pricing scheduler (05:15 daily) | Per-property revenue analysis → human approval queue |
 | Review webhook | Sentiment + drafted reply → publish → staff alert if rating ≤ 3 |
-| Dashboard webhook (GET) | Key-protected metrics for the Vercel dashboard |
+| Dashboard webhook (GET) | Key-protected metrics, read from Supabase, for the Vercel dashboard |
 
 Instagram DMs run through the **Bougainvilla AI Booking Agent** — shared
 conversation memory plus six tools (availability, property search, create
@@ -110,7 +110,17 @@ Meta Lead Ads branches are removed, not just disconnected):
   directs it to gather dates, guest count and property preference then flag
   `needs_human`. Re-enable each tool in the n8n UI as its backend is connected.
 
-**Behaviour**
+**Persistence**
+
+- Every handled message goes to Supabase through one `record_exchange` call
+  that upserts the guest and records both sides of the exchange atomically.
+  `messages.provider_message_id` is `UNIQUE`, so a Meta webhook retry
+  conflicts and is ignored rather than producing a second reply — the
+  de-duplication gap that was previously open by design.
+- The dashboard endpoint reads `dashboard_metrics()`, one call returning
+  everything the page needs.
+
+**Behaviour
 
 - The original routed channels through chained IFs, with the `meta_ads` branch
   sitting on the false-output of the Instagram check — so any unrecognised
