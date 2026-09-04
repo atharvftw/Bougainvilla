@@ -52,9 +52,10 @@ Meta Lead Ads branches are removed, not just disconnected):
 - Configured entirely through the n8n UI — credentials for outbound auth, three
   marked constants in Code nodes, one node parameter. No `$env`, no `$vars`, no
   server access. See [../docs/n8n-config.md](../docs/n8n-config.md).
-- Signature verification uses **WebCrypto** (`crypto.subtle`) rather than
-  `require('crypto')`, so it needs no `NODE_FUNCTION_ALLOW_BUILTIN` on the host.
-  Digests verified byte-identical to Node's `createHmac`.
+- Signature verification implements SHA-256 and HMAC in plain JavaScript. The
+  Code sandbox provides neither `require()` nor a `crypto` global, so both the
+  usual approaches throw. Digests verified byte-identical to Node's
+  `createHmac`; do not replace it with a crypto call.
 
 **Route**
 

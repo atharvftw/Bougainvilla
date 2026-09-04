@@ -86,15 +86,27 @@ https://graph.instagram.com/v23.0/{{ $json.recipientId || 'PASTE_INSTAGRAM_BUSIN
 
 ## Why the signature check works without server config
 
-Meta signs webhooks with HMAC-SHA256, which normally needs
-`require('crypto')` — blocked unless `NODE_FUNCTION_ALLOW_BUILTIN=crypto` is set
-on the server.
+Meta signs webhooks with HMAC-SHA256. Two obvious ways to compute it are both
+unavailable in n8n's Code sandbox:
 
-The Code node uses **WebCrypto** (`crypto.subtle`) instead, which is a Node 18+
-global and needs no configuration, plus a constant-time comparison written in
-plain JavaScript. Verified to produce byte-identical digests to Node's
-`createHmac`, and to reject tampered bodies, wrong signatures and missing
-signatures.
+- `require('crypto')` — blocked unless `NODE_FUNCTION_ALLOW_BUILTIN=crypto` is
+  set on the host.
+- `crypto.subtle` (WebCrypto) — the sandbox exposes no `crypto` global at all.
+  Trying it fails with `ReferenceError: crypto is not defined`.
+
+So **Verify Instagram Signature** implements SHA-256 and HMAC in plain
+JavaScript, using only `Buffer` (which the sandbox does provide) for base64 and
+UTF-8 conversion. It depends on nothing that can be switched off.
+
+Verified byte-identical to Node's `createHmac` across message lengths either
+side of the 64-byte block boundary (0, 55, 56, 57, 63, 64, 65, 127, 128, 4096)
+and key lengths above and below it, then re-tested inside a sandbox with
+`crypto` and `require` both undefined: valid signatures pass; tampered bodies,
+wrong, truncated and missing signatures are rejected; Unicode and 5 KB payloads
+verify correctly.
+
+That is why the node is ~100 lines. Do not "simplify" it back to a crypto
+call — it will throw on this instance.
 
 ---
 
