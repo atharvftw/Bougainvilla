@@ -91,6 +91,15 @@ Meta Lead Ads branches are removed, not just disconnected):
   and a `.first()` lookup would have paired a reply with the wrong guest. All
   three now handle every message, paired per item.
 
+**Reply path ordering**
+
+- `Log AI Lead Decision` sat between the agent and the reply and, like every
+  n8n node by default, stopped the workflow on error. It points at a
+  placeholder CRM until one is connected, so the first real answer the agent
+  produced would have died there and the guest would have got nothing. The
+  reply is now sent first and logging follows, set to continue on error — a
+  CRM that is down costs a log line, never a reply.
+
 **Behaviour**
 
 - The original routed channels through chained IFs, with the `meta_ads` branch

@@ -566,7 +566,7 @@
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({channel:$json.channel,guest_id:$json.senderId,message:$json.text||'',intent:$json.intent,lead_stage:$json.lead_stage,booking_status:$json.booking_status,property_id:$json.property_id||'',booking_id:$json.booking_id||''}) }}",
+        "body": "={{ JSON.stringify({channel:$('Parse AI Agent Decision').item.json.channel,guest_id:$('Parse AI Agent Decision').item.json.senderId,message:$('Parse AI Agent Decision').item.json.text||'',intent:$('Parse AI Agent Decision').item.json.intent,lead_stage:$('Parse AI Agent Decision').item.json.lead_stage,booking_status:$('Parse AI Agent Decision').item.json.booking_status,property_id:$('Parse AI Agent Decision').item.json.property_id||'',booking_id:$('Parse AI Agent Decision').item.json.booking_id||''}) }}",
         "options": {},
         "authentication": "genericCredentialType",
         "genericAuthType": "httpBearerAuth"
@@ -576,7 +576,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2448,
+        2896,
         192
       ],
       "credentials": {
@@ -584,7 +584,8 @@
           "id": "CRED_CRM",
           "name": "CRM API (Bearer)"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1615,17 +1616,6 @@
       "main": [
         [
           {
-            "node": "Log AI Lead Decision",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Log AI Lead Decision": {
-      "main": [
-        [
-          {
             "node": "Send Instagram AI Reply",
             "type": "main",
             "index": 0
@@ -2041,6 +2031,17 @@
         [
           {
             "node": "Check Meta Verify Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Instagram AI Reply": {
+      "main": [
+        [
+          {
+            "node": "Log AI Lead Decision",
             "type": "main",
             "index": 0
           }
