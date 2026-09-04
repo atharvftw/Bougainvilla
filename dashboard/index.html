@@ -906,13 +906,22 @@ function initFollowups(){
 const STATUS_CLASS = {confirmed:'bg', booked:'bg', pending:'by', awaiting_payment:'bb',
                       enquiry:'bb', cancelled:'br', support:'by'};
 
-function setConnection(ok, label){
+// Three states, because "no data" has two very different causes and they
+// need different fixes:
+//   live    - n8n answered and the CRM returned metrics
+//   no_crm  - n8n answered, but CRM_METRICS_URL is not connected yet
+//   offline - n8n could not be reached at all
+function setConnection(state, label){
   const pulse = document.getElementById('conn-pulse');
   const text  = document.getElementById('conn-label');
   const badge = document.getElementById('data-badge');
+  const colour = { live:'var(--green)', no_crm:'var(--amber)', offline:'var(--red)' }[state];
   if(text)  text.textContent = label;
-  if(pulse) pulse.style.background = ok ? 'var(--green)' : 'var(--amber)';
-  if(badge){ badge.textContent = ok ? 'Live' : 'Demo'; badge.className = 'badge ' + (ok ? 'bb' : 'by'); }
+  if(pulse) pulse.style.background = colour || 'var(--amber)';
+  if(badge){
+    badge.textContent = state === 'live' ? 'Live' : 'Demo';
+    badge.className = 'badge ' + (state === 'live' ? 'bb' : 'by');
+  }
 }
 
 function setText(id, value){
@@ -967,12 +976,20 @@ async function loadMetrics(){
     const res = await fetch('/api/metrics', {headers:{accept:'application/json'}});
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
-    if(d.source !== 'crm') throw new Error('CRM unavailable');
-    applyMetrics(d);
-    setConnection(true, 'Live — n8n connected');
+
+    if(d.source === 'crm'){
+      applyMetrics(d);
+      setConnection('live', 'Live — n8n connected');
+    }else if(d.source === 'no_crm'){
+      // n8n is reachable; there is simply no CRM behind it yet.
+      setConnection('no_crm', 'n8n connected · CRM not linked');
+    }else{
+      setConnection('offline', 'Demo data — n8n not reachable');
+      console.warn('[bougainvilla] /api/metrics:', d.error || 'unknown');
+    }
   }catch(err){
     console.warn('[bougainvilla] falling back to demo data:', err.message);
-    setConnection(false, 'Demo data — n8n not connected');
+    setConnection('offline', 'Demo data — n8n not reachable');
   }
 }
 

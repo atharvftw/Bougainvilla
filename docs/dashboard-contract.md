@@ -51,10 +51,14 @@ Notes:
 
 The sidebar pill and the "Recent Bookings" badge report which one you're seeing:
 
-| State | Sidebar | Badge |
-|---|---|---|
-| n8n reachable, `source: "crm"` | green · "Live — n8n connected" | Live |
-| anything else | amber · "Demo data — n8n not connected" | Demo |
+| `source` | Sidebar | Badge | Means |
+|---|---|---|---|
+| `crm` | 🟢 "Live — n8n connected" | Live | working end to end |
+| `no_crm` | 🟡 "n8n connected · CRM not linked" | Demo | n8n answered; `CRM_METRICS_URL` isn't wired up |
+| anything else | 🔴 "Demo data — n8n not reachable" | Demo | the proxy couldn't reach n8n at all |
+
+The middle state matters: without it, a missing CRM looks identical to a broken
+n8n connection, and you debug the wrong half of the system.
 
 Failures never blank the page. `/api/metrics` returns HTTP 200 with
 `source: "unavailable"` and a reason (`not_configured`, `upstream_error`,
