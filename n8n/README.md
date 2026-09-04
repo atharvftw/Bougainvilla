@@ -100,6 +100,16 @@ Meta Lead Ads branches are removed, not just disconnected):
   reply is now sent first and logging follows, set to continue on error — a
   CRM that is down costs a log line, never a reply.
 
+**Agent tools are off until a backend exists**
+
+- All six tools post to `example.invalid`. The agent called `Tool - Human
+  Handoff` on the first real DM, the request failed, and the failure took the
+  whole execution down — so the guest got nothing. They ship **disabled**.
+- With no tools the agent must not imply it can look anything up, so its prompt
+  now forbids stating availability, quoting prices or confirming bookings, and
+  directs it to gather dates, guest count and property preference then flag
+  `needs_human`. Re-enable each tool in the n8n UI as its backend is connected.
+
 **Behaviour**
 
 - The original routed channels through chained IFs, with the `meta_ads` branch

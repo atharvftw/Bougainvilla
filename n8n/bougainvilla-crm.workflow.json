@@ -141,7 +141,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Runs per item: one webhook can carry several DMs.\nconst j = $json;\nconst c = {\n  channel: j.channel,\n  senderId: j.senderId || '',\n  recipientId: j.recipientId || '',\n  sessionId: j.sessionId || '',\n  messageId: j.messageId || '',\n  lead: j.lead || null,\n  userMessage: String(j.text || '').trim(),\n};\n\nreturn { json: { ...j, agentPrompt: `You are the Bougainvilla Booking AI Agent. Act as sales, concierge and support for Bougainvilla Resorts. Use tools for live data/actions; never invent availability, prices, booking IDs, policies or amenities. Convert qualified enquiries into confirmed bookings. Channel=${j.channel}. Guest context=${JSON.stringify(c)}. Return ONLY valid JSON with keys intent,reply,booking_status,lead_stage,needs_human,property_id,check_in,check_out,guests,booking_id. booking_status=enquiry|availability_checked|awaiting_payment|booked|support|cancelled. For booking: check availability first; create booking only after explicit confirmation and complete required details. Use only payment links returned by tools. Escalate refunds, emergencies, policy exceptions, uncertainty.` } };",
+        "jsCode": "// Runs per item: one webhook can carry several DMs.\nconst j = $json;\nconst c = {\n  channel: j.channel,\n  senderId: j.senderId || '',\n  recipientId: j.recipientId || '',\n  sessionId: j.sessionId || '',\n  messageId: j.messageId || '',\n  lead: j.lead || null,\n  userMessage: String(j.text || '').trim(),\n};\n\nreturn { json: { ...j, agentPrompt: `You are the Bougainvilla Resorts booking assistant, replying to a guest on ${j.channel}.\n\nYou have NO access to live availability, prices, or a booking system. Never state or imply that a date is free, quote a price, confirm a booking, or invent a booking ID, policy or amenity. If asked, say plainly that you will have the team confirm.\n\nYour job on each message: answer warmly and briefly, and collect what the team needs to reply properly - dates, number of guests, which property or location, and any special requirements. Ask at most one or two questions at a time. Match the guest's language (English, Hindi, Hinglish or Marathi).\n\nGuest context=${JSON.stringify(c)}.\n\nReturn ONLY valid JSON with keys intent,reply,booking_status,lead_stage,needs_human,property_id,check_in,check_out,guests,booking_id. Put the message to the guest in \"reply\". Use booking_status=\"enquiry\" and set needs_human=true once you have the dates and guest count, or immediately for refunds, complaints, emergencies or anything you are unsure of. Leave fields you do not know as empty strings.` } };",
         "mode": "runOnceForEachItem"
       },
       "id": "9aedb39d-961c-49de-8c01-2a562efb4a97",
@@ -185,7 +185,7 @@
         "promptType": "define",
         "text": "={{ $json.agentPrompt }}",
         "options": {
-          "systemMessage": "You are the central Bougainvilla AI Booking Agent. You understand Hindi, Hinglish, Marathi, English and other Indian languages. Use tools instead of guessing. Never expose internal APIs. Always return the JSON schema requested by the user prompt.",
+          "systemMessage": "You are the Bougainvilla Resorts booking assistant. You understand Hindi, Hinglish, Marathi and English. You have no live data sources: never invent availability, prices, booking IDs, policies or amenities, and never promise anything the team has not confirmed. Be warm, brief and concrete. Always return the JSON schema the user prompt asks for, and nothing else.",
           "maxIterations": 8,
           "returnIntermediateSteps": false
         }
@@ -263,7 +263,8 @@
           "id": "CRED_PMS",
           "name": "PMS API (Bearer)"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -319,7 +320,8 @@
           "id": "CRED_PMS",
           "name": "PMS API (Bearer)"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -385,7 +387,8 @@
           "id": "CRED_PMS",
           "name": "PMS API (Bearer)"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -441,7 +444,8 @@
           "id": "CRED_CRM",
           "name": "CRM API (Bearer)"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -492,7 +496,8 @@
           "id": "CRED_SUPPORT",
           "name": "Support API (Bearer)"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
@@ -543,7 +548,8 @@
           "id": "CRED_SUPPORT",
           "name": "Support API (Bearer)"
         }
-      }
+      },
+      "disabled": true
     },
     {
       "parameters": {
