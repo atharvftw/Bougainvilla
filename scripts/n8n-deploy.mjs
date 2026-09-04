@@ -101,10 +101,22 @@ const local = JSON.parse(readFileSync(WORKFLOW, 'utf8'));
 console.log(`n8n      ${BASE}`);
 const list = await api('/api/v1/workflows?limit=250');
 const items = list.data || list;
-const live = items.find(w => w.name === local.name);
+const matches = items.filter(w => w.name === local.name);
+if (matches.length > 1) {
+  const wanted = process.env.N8N_WORKFLOW_ID;
+  if (!wanted) {
+    die(`${matches.length} workflows are named "${local.name}" — refusing to guess.`,
+      'Pick one and re-run with N8N_WORKFLOW_ID set:\n  ' +
+      matches.map(w => `${w.id}  (${w.active ? 'active' : 'inactive'})`).join('\n  '));
+  }
+}
+const live = process.env.N8N_WORKFLOW_ID
+  ? items.find(w => w.id === process.env.N8N_WORKFLOW_ID)
+  : matches[0];
 if (!live) {
   console.error(`\nNo workflow named "${local.name}" on that instance.\n` +
     `Found: ${items.map(w => `${w.name} (${w.id})`).join(', ') || '(none)'}\n` +
+    `Set N8N_WORKFLOW_ID to target one by id.\n` +
     `Import the JSON once through the UI first, then this script can update it.`);
   process.exit(1);
 }

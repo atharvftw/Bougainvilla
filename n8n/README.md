@@ -100,6 +100,16 @@ Meta Lead Ads branches are removed, not just disconnected):
   reply is now sent first and logging follows, set to continue on error — a
   CRM that is down costs a log line, never a reply.
 
+**Tool node names must be identifiers**
+
+- n8n exposes a tool node's *name* to the model as the tool name and validates
+  it against `/^[a-zA-Z_][a-zA-Z0-9_]*$/`. The original names
+  (`Tool - Check Availability`) fail on the spaces and hyphen, so the node
+  throws `The name of this tool is not a valid alphanumeric string` before it
+  ever runs. Renamed to `check_availability`, `property_search`,
+  `create_booking`, `create_crm_lead`, `create_support_ticket`,
+  `human_handoff` — which read better to the model anyway.
+
 **Agent tools: one real, five off**
 
 - All six tools originally posted to `example.invalid`. The agent called

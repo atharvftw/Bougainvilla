@@ -240,7 +240,7 @@
         }
       },
       "id": "2af5ace0-9a3c-4fba-9e2c-2d64a2c631d7",
-      "name": "Tool - Check Availability",
+      "name": "check_availability",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
@@ -296,7 +296,7 @@
         "genericAuthType": "httpBearerAuth"
       },
       "id": "9a9452a7-f3c1-4e8f-9556-3351478a1ec4",
-      "name": "Tool - Property Search",
+      "name": "property_search",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
@@ -363,7 +363,7 @@
         "genericAuthType": "httpBearerAuth"
       },
       "id": "025fa7c7-b255-4f6a-b447-cbe2375a81f1",
-      "name": "Tool - Create Booking",
+      "name": "create_booking",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
@@ -420,7 +420,7 @@
         "genericAuthType": "httpBearerAuth"
       },
       "id": "dd305d34-b4a8-4906-a879-65893cf4df68",
-      "name": "Tool - Create CRM Lead",
+      "name": "create_crm_lead",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
@@ -472,7 +472,7 @@
         "genericAuthType": "httpBearerAuth"
       },
       "id": "ed2cff3c-3de5-4e57-9742-1417cd36f619",
-      "name": "Tool - Create Support Ticket",
+      "name": "create_support_ticket",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
@@ -524,7 +524,7 @@
         "genericAuthType": "httpBearerAuth"
       },
       "id": "be99e6ff-e744-4b1c-b9f0-6566271e70ad",
-      "name": "Tool - Human Handoff",
+      "name": "human_handoff",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
@@ -1534,7 +1534,7 @@
         ]
       ]
     },
-    "Tool - Check Availability": {
+    "check_availability": {
       "ai_tool": [
         [
           {
@@ -1545,7 +1545,7 @@
         ]
       ]
     },
-    "Tool - Property Search": {
+    "property_search": {
       "ai_tool": [
         [
           {
@@ -1556,7 +1556,7 @@
         ]
       ]
     },
-    "Tool - Create Booking": {
+    "create_booking": {
       "ai_tool": [
         [
           {
@@ -1567,7 +1567,7 @@
         ]
       ]
     },
-    "Tool - Create CRM Lead": {
+    "create_crm_lead": {
       "ai_tool": [
         [
           {
@@ -1578,7 +1578,7 @@
         ]
       ]
     },
-    "Tool - Create Support Ticket": {
+    "create_support_ticket": {
       "ai_tool": [
         [
           {
@@ -1589,7 +1589,7 @@
         ]
       ]
     },
-    "Tool - Human Handoff": {
+    "human_handoff": {
       "ai_tool": [
         [
           {

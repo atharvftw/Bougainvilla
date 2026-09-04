@@ -59,6 +59,10 @@ behaviour, your instance is the source of truth for secrets.
 - The workflow must exist in n8n already, matched **by name**
   (`Bougainvilla CRM — AI Booking & Operations`). Import the JSON through the
   UI once; after that this script updates it.
+- Re-importing creates a *second* workflow rather than replacing the first. If
+  two share the name the script refuses to guess and lists their ids; pick one
+  with `export N8N_WORKFLOW_ID=...`. Archive the stale copy so only one is
+  active — two active copies means two replies to every DM.
 - n8n's API rejects a PUT carrying read-only fields (`id`, `active`,
   `versionId`, …) with a 400. The script sends only `name`, `nodes`,
   `connections`, `settings`.
