@@ -110,6 +110,18 @@ Meta Lead Ads branches are removed, not just disconnected):
   `create_booking`, `create_crm_lead`, `create_support_ticket`,
   `human_handoff` — which read better to the model anyway.
 
+**Reply as the villa, and only to the villa's DMs**
+
+- `Send Instagram AI Reply` built its URL from `recipientId` — whichever
+  account the DM was addressed to. A tester's personal account subscribed to
+  the same app fires this webhook too, so the workflow tried to reply *as* that
+  account with the villa's token and Meta refused: *"Object with ID … does not
+  exist, cannot be loaded due to missing permissions"*. The URL is now pinned
+  to the villa's account.
+- `Normalize Instagram Event` drops any event whose `recipient.id` is not the
+  villa. Answering a third party's DMs would be wrong even if the token allowed
+  it.
+
 **Agent tools: one real, five off**
 
 - All six tools originally posted to `example.invalid`. The agent called
