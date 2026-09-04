@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* Every number on this page comes from Supabase. There is no demo data:
-   if the database is empty the page says so rather than inventing rows. whatasp*/
+   if the database is empty the page says so rather than inventing rows. */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
 :root{
@@ -123,6 +123,33 @@ tbody tr:hover{background:var(--border-soft)}
 .stay-who{flex:1; font-size:13px; color:var(--ink-2)}
 .stay-nights{font-size:12px; color:var(--ink-3); white-space:nowrap}
 
+.money{font-variant-numeric:tabular-nums}
+.tile-value.big{font-size:26px}
+
+/* ── occupancy: two proportions side by side ── */
+.occ{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:22px}
+.occ-row{min-width:0}
+.occ-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.occ-name{font-size:12.5px; font-weight:600; color:var(--ink-2)}
+.occ-pct{font-size:19px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.occ-note{font-size:12px; color:var(--ink-3); margin-top:5px}
+.meter.tall{height:8px; margin-top:10px}
+.meter-fill.good{background:var(--good)}
+.meter-fill.warn{background:var(--warn)}
+.meter-fill.crit{background:var(--crit)}
+.read{margin-top:18px; padding-top:15px; border-top:1px solid var(--border-soft);
+  font-size:12.5px; color:var(--ink-2); line-height:1.6}
+
+/* ── the work queue: nights with nobody in them ── */
+.night{display:flex; align-items:center; gap:12px; padding:9px 0;
+  border-top:1px solid var(--border-soft)}
+.night:first-child{border-top:0}
+.night-when{font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums;
+  min-width:112px; white-space:nowrap}
+.night-gap{flex:1}
+.night-price{font-size:13px; font-weight:600; font-variant-numeric:tabular-nums}
+.night-off{font-size:11px; font-weight:600; color:var(--warn); margin-left:8px}
+
 .foot{font-size:12px; color:var(--ink-3); text-align:center; margin-top:26px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
   background:var(--border-soft); padding:1px 5px; border-radius:4px}
@@ -193,6 +220,65 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
       <div class="free"><span class="free-date" id="b-free">—</span></div>
       <div class="tile-note" id="b-free-note"></div>
     </div>
+  </div>
+
+  <div class="tiles" id="money-tiles" hidden>
+    <div class="tile">
+      <div class="tile-label">Revenue this month</div>
+      <div class="tile-value big money" id="m-revenue">—</div>
+      <div class="tile-note" id="m-basis"></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Nights sold</div>
+      <div class="tile-value" id="m-nights">—</div>
+      <div class="tile-note" id="m-rate"></div>
+    </div>
+    <div class="tile" id="tile-profit">
+      <div class="tile-label">Profit this month</div>
+      <div class="tile-value money" id="m-profit">—</div>
+      <div class="tile-note" id="m-profit-note"></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">To break even</div>
+      <div class="tile-value" id="m-breakeven">—</div>
+      <div class="tile-note" id="m-breakeven-note"></div>
+    </div>
+  </div>
+
+  <div class="card" id="occ-card" hidden>
+    <div class="card-head">
+      <span class="card-title">Where the empty nights are</span>
+      <span class="card-sub" id="occ-sub"></span>
+    </div>
+    <div class="card-body">
+      <div class="occ">
+        <div class="occ-row">
+          <div class="occ-head">
+            <span class="occ-name">Weekends &middot; Fri&ndash;Sun</span>
+            <span class="occ-pct" id="occ-we-pct">—</span>
+          </div>
+          <div class="meter tall"><div class="meter-fill" id="occ-we-bar" style="width:0%"></div></div>
+          <div class="occ-note" id="occ-we-note"></div>
+        </div>
+        <div class="occ-row">
+          <div class="occ-head">
+            <span class="occ-name">Weekdays &middot; Mon&ndash;Thu</span>
+            <span class="occ-pct" id="occ-wd-pct">—</span>
+          </div>
+          <div class="meter tall"><div class="meter-fill" id="occ-wd-bar" style="width:0%"></div></div>
+          <div class="occ-note" id="occ-wd-note"></div>
+        </div>
+      </div>
+      <div class="read" id="occ-read"></div>
+    </div>
+  </div>
+
+  <div class="card" id="queue-card" hidden>
+    <div class="card-head">
+      <span class="card-title">Empty weekday nights, next 14 days</span>
+      <span class="card-sub" id="queue-sub"></span>
+    </div>
+    <div class="card-body" id="queue-body"></div>
   </div>
 
   <div class="card" id="stays-card" hidden>
@@ -312,6 +398,9 @@ function renderMetrics(d){
        <span class="flow-lab">guests total</span></div>`;
 
   renderBookings(d.bookings);
+  window.__tariff = d.tariff || null;
+  renderMoney(d.economics, d.tariff);
+  renderOccupancy(d.occupancy);
 
   const leads = Array.isArray(d.recent_leads) ? d.recent_leads : [];
   $('recent-count').textContent = leads.length ? `${leads.length} most recent` : '';
@@ -390,8 +479,105 @@ function renderBookings(b){
   }).join('');
 }
 
+// Money. Profit and break-even appear only once real cost figures are in
+// pricing_config; until then the tiles say what is missing rather than
+// showing a confident wrong number.
+function renderMoney(e, tariff){
+  const box = $('money-tiles');
+  if(!e || e.nights_sold === undefined){ box.hidden = true; return; }
+  box.hidden = false;
+
+  const rs = v => '\u20b9' + Number(v || 0).toLocaleString('en-IN');
+  $('m-revenue').textContent = rs(e.revenue_this_month);
+  $('m-basis').textContent   = e.revenue_basis === 'quoted'
+    ? 'from agreed rates' : 'priced at the standard tariff';
+
+  $('m-nights').textContent = Number(e.nights_sold || 0).toLocaleString('en-IN');
+  $('m-rate').textContent   = e.nights_sold ? `${rs(e.avg_rate)} average a night` : 'nothing sold yet';
+
+  const haveCosts = e.fixed_monthly !== null && e.fixed_monthly !== undefined;
+  if(!haveCosts){
+    $('m-profit').textContent      = '—';
+    $('m-profit-note').textContent = 'set fixed_monthly in pricing_config';
+    $('m-breakeven').textContent   = '—';
+    $('m-breakeven-note').textContent = 'needs your monthly costs';
+    return;
+  }
+
+  const profit = Number(e.profit || 0);
+  $('m-profit').textContent = (profit < 0 ? '-' : '') + rs(Math.abs(profit));
+  $('m-profit').style.color = profit < 0 ? 'var(--crit)' : 'var(--good)';
+  $('m-profit-note').textContent =
+    `after ${rs(e.fixed_monthly)} fixed and ${rs(e.variable_per_night)} a night`;
+
+  const togo = Number(e.nights_to_break_even);
+  $('m-breakeven').textContent = Number.isFinite(togo)
+    ? (togo > 0 ? `${togo} night${togo === 1 ? '' : 's'}` : 'covered')
+    : '—';
+  $('m-breakeven-note').textContent = Number.isFinite(togo)
+    ? (togo > 0 ? `${e.break_even_nights} needed, ${e.nights_sold} sold`
+                : `${e.break_even_nights} needed, ${e.nights_sold} sold`)
+    : 'average rate is below the per-night cost';
+}
+
+// The one comparison that decides what to discount. Colour carries the
+// warning, but never alone - each bar is labelled with its own reading.
+function renderOccupancy(o){
+  const card = $('occ-card'), queue = $('queue-card');
+  if(!o || !o.weekend_available){ card.hidden = true; queue.hidden = true; return; }
+  card.hidden = false;
+
+  const band = p => p >= 70 ? 'good' : p >= 40 ? 'warn' : 'crit';
+  const word = p => p >= 70 ? 'filling well' : p >= 40 ? 'half empty' : 'needs filling';
+
+  [['we', o.weekend_fill_pct, o.weekend_sold, o.weekend_available],
+   ['wd', o.weekday_fill_pct, o.weekday_sold, o.weekday_available]].forEach(([k, pct, sold, avail]) => {
+    const p = Number(pct || 0);
+    $(`occ-${k}-pct`).textContent  = p + '%';
+    $(`occ-${k}-bar`).style.width  = p + '%';
+    $(`occ-${k}-bar`).className     = 'meter-fill ' + band(p);
+    $(`occ-${k}-note`).textContent = `${sold} of ${avail} nights sold \u00b7 ${word(p)}`;
+  });
+
+  const we = Number(o.weekend_fill_pct || 0), wd = Number(o.weekday_fill_pct || 0);
+  const gap = we - wd;
+  $('occ-sub').textContent = 'this month';
+  $('occ-read').textContent = gap >= 25
+    ? `Weekends are running ${gap} points ahead of weekdays. The weekday nights are `
+      + `where the unearned revenue is - an empty night earns nothing, and discounting `
+      + `one still beats leaving it empty. Weekends stay at the full rate.`
+    : gap <= -25
+      ? `Weekdays are ahead of weekends this month, which is unusual - worth checking `
+        + `the ledger before acting on it.`
+      : 'Weekends and weekdays are filling at a similar rate this month.';
+
+  const nights = Array.isArray(o.empty_weekday_nights_14d) ? o.empty_weekday_nights_14d : [];
+  if(!nights.length){
+    queue.hidden = false;
+    $('queue-sub').textContent = '';
+    $('queue-body').innerHTML =
+      '<div class="empty"><div class="empty-title">Nothing to chase</div>' +
+      '<div class="empty-note">Every weekday night in the next fortnight is taken.</div></div>';
+    return;
+  }
+  queue.hidden = false;
+  $('queue-sub').textContent = `${nights.length} to fill`;
+  $('queue-body').innerHTML = nights.map(nt => {
+    const price = Number(nt.price || 0);
+    const list  = Number((window.__tariff && window.__tariff.weekday_list) || 0);
+    const off   = list && price < list ? Math.round((1 - price / list) * 100) : 0;
+    return `<div class="night">
+      <span class="night-when">${fmtDate(nt.date)}</span>
+      <span class="night-gap"></span>
+      <span class="night-price">\u20b9${price.toLocaleString('en-IN')}</span>
+      ${off ? `<span class="night-off">${off}% off</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
 function showBlank(){
   ['t-conversations','t-active','t-today','t-human'].forEach(id => $(id).textContent = '—');
+  ['money-tiles','occ-card','queue-card'].forEach(id => { const el = $(id); if(el) el.hidden = true; });
   drawBars([], []);
   $('booking-tiles').hidden = true;
   $('stays-card').hidden = true;

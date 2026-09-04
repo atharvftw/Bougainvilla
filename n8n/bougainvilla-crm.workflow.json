@@ -141,448 +141,6 @@
     },
     {
       "parameters": {
-        "jsCode": "// Runs per item: one webhook can carry several DMs.\nconst j = $json;\nconst c = {\n  channel: j.channel,\n  senderId: j.senderId || '',\n  recipientId: j.recipientId || '',\n  sessionId: j.sessionId || '',\n  messageId: j.messageId || '',\n  userMessage: String(j.text || '').trim(),\n  today: new Date().toISOString().slice(0, 10),\n};\n\nreturn { json: { ...j, agentPrompt: `You are the Bougainvilla Resorts booking assistant, replying to a guest on ${j.channel}. Today is ${c.today}.\n\nAVAILABILITY — you have one tool, check_availability. Call it before you say anything about dates being free or taken; never guess. Pass dates as YYYY-MM-DD. If the guest gives one date only, pass it as check_in and leave check_out empty. Work out real dates yourself: \"this weekend\", \"14th\", \"next Friday\" become actual dates relative to today. If the guest has not given a date, ask for one rather than calling the tool.\n- available true → say the dates are free and ask for guest count and any preferences to hold it.\n- available false → say those dates are taken and offer next_available_from as an alternative.\n- an error field → ask the guest to confirm the dates.\n\nEVERYTHING ELSE you do NOT have: no prices, no payment links, no confirmed bookings, no policies, no amenity list. Never quote a rate, never say a booking is confirmed, never invent a booking ID. Checking availability is not the same as holding a room — say the team will confirm.\n\nBe warm and brief. Collect dates, guest count and any special requirements. Ask one or two questions at a time. Match the guest's language (English, Hindi, Hinglish or Marathi).\n\nGuest context=${JSON.stringify(c)}.\n\nReturn ONLY valid JSON with keys intent,reply,booking_status,lead_stage,needs_human,property_id,check_in,check_out,guests,booking_id. Put the guest-facing message in \"reply\". Put any dates you checked into check_in and check_out as YYYY-MM-DD. Use booking_status=\"availability_checked\" once you have called the tool, otherwise \"enquiry\". Set needs_human=true when dates are free and the guest wants to proceed, or immediately for refunds, complaints, emergencies or anything you are unsure of. Leave unknown fields as empty strings.` } };",
-        "mode": "runOnceForEachItem"
-      },
-      "id": "9aedb39d-961c-49de-8c01-2a562efb4a97",
-      "name": "Build Unified Agent Context",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1120,
-        192
-      ]
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "mode": "id",
-          "value": "sarvam-105b"
-        },
-        "options": {
-          "maxTokens": 900,
-          "temperature": 0.2
-        }
-      },
-      "id": "fd8916ab-04f8-4dbc-ab9f-11cf8bd412da",
-      "name": "Sarvam AI Chat Model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
-      "position": [
-        1088,
-        416
-      ],
-      "credentials": {
-        "openAiApi": {
-          "id": "REPLACE_ME",
-          "name": "Sarvam AI (OpenAI-compatible)"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $json.agentPrompt }}",
-        "options": {
-          "systemMessage": "You are the Bougainvilla Resorts booking assistant. You understand Hindi, Hinglish, Marathi and English. Use the check_availability tool for any question about dates - never assert availability from memory. You have no prices, no booking system and no policy document: never quote a rate, confirm a booking, or invent a booking ID, policy or amenity. Be warm and brief. Always return the JSON schema the user prompt asks for, and nothing else.",
-          "maxIterations": 8,
-          "returnIntermediateSteps": false
-        }
-      },
-      "id": "e32e0821-75e5-4984-8d50-b9f79f9b9999",
-      "name": "Bougainvilla AI Booking Agent",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 2.2,
-      "position": [
-        1504,
-        192
-      ]
-    },
-    {
-      "parameters": {
-        "sessionIdType": "customKey",
-        "sessionKey": "={{ $json.sessionId || ('guest:' + ($json.senderId || 'unknown')) }}",
-        "contextWindowLength": 12
-      },
-      "id": "e1701f0f-67ec-4f4b-adf0-6b11ab980c3f",
-      "name": "Guest Conversation Memory",
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.3,
-      "position": [
-        1248,
-        416
-      ]
-    },
-    {
-      "parameters": {
-        "toolDescription": "Check whether the villa is free for a date range. ALWAYS call this before saying anything about availability. Dates must be YYYY-MM-DD. If the guest gives only one date, pass it as check_in and leave check_out empty. Returns available true/false, any conflicting bookings, and next_available_from when taken.",
-        "method": "POST",
-        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/check_availability",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\"p_check_in\": \"{check_in}\", \"p_check_out\": \"{check_out}\"}",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "check_in",
-              "description": "Check-in date, YYYY-MM-DD",
-              "type": "string"
-            },
-            {
-              "name": "check_out",
-              "description": "Check-out date, YYYY-MM-DD. Empty for a single night or day visit.",
-              "type": "string"
-            }
-          ]
-        }
-      },
-      "id": "2af5ace0-9a3c-4fba-9e2c-2d64a2c631d7",
-      "name": "check_availability",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [
-        1376,
-        416
-      ],
-      "credentials": {
-        "supabaseApi": {
-          "id": "CRED_SUPABASE",
-          "name": "Supabase (Bougainvilla)"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "toolDescription": "Search matching properties by dates, guests, budget and preferences.",
-        "method": "POST",
-        "url": "https://example.invalid/pms/properties/search",
-        "sendBody": true,
-        "specifyBody": "model",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "check_in",
-              "description": "Check-in date",
-              "type": "string"
-            },
-            {
-              "name": "check_out",
-              "description": "Check-out date",
-              "type": "string"
-            },
-            {
-              "name": "guests",
-              "description": "Guest count",
-              "type": "number"
-            },
-            {
-              "name": "budget",
-              "description": "Budget",
-              "type": "number"
-            },
-            {
-              "name": "preferences",
-              "description": "Location/amenities",
-              "type": "string"
-            }
-          ]
-        },
-        "optimizeResponse": true,
-        "dataField": "data",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
-      },
-      "id": "9a9452a7-f3c1-4e8f-9556-3351478a1ec4",
-      "name": "property_search",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [
-        1504,
-        416
-      ],
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_PMS",
-          "name": "PMS API (Bearer)"
-        }
-      },
-      "disabled": true
-    },
-    {
-      "parameters": {
-        "toolDescription": "Create a reservation only after explicit guest confirmation and complete details.",
-        "method": "POST",
-        "url": "https://example.invalid/pms/bookings",
-        "sendBody": true,
-        "specifyBody": "model",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "property_id",
-              "description": "Selected property",
-              "type": "string"
-            },
-            {
-              "name": "check_in",
-              "description": "Check-in",
-              "type": "string"
-            },
-            {
-              "name": "check_out",
-              "description": "Check-out",
-              "type": "string"
-            },
-            {
-              "name": "guests",
-              "description": "Guest count",
-              "type": "number"
-            },
-            {
-              "name": "guest_name",
-              "description": "Guest name",
-              "type": "string"
-            },
-            {
-              "name": "guest_phone",
-              "description": "Guest phone",
-              "type": "string"
-            },
-            {
-              "name": "guest_email",
-              "description": "Guest email optional",
-              "type": "string"
-            }
-          ]
-        },
-        "optimizeResponse": true,
-        "dataField": "data",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
-      },
-      "id": "025fa7c7-b255-4f6a-b447-cbe2375a81f1",
-      "name": "create_booking",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [
-        1632,
-        416
-      ],
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_PMS",
-          "name": "PMS API (Bearer)"
-        }
-      },
-      "disabled": true
-    },
-    {
-      "parameters": {
-        "toolDescription": "Create/update the CRM lead and booking stage.",
-        "method": "POST",
-        "url": "https://example.invalid/crm/leads",
-        "sendBody": true,
-        "specifyBody": "model",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "channel",
-              "description": "Source channel",
-              "type": "string"
-            },
-            {
-              "name": "name",
-              "description": "Guest name",
-              "type": "string"
-            },
-            {
-              "name": "phone",
-              "description": "Guest phone",
-              "type": "string"
-            },
-            {
-              "name": "message",
-              "description": "Latest message",
-              "type": "string"
-            },
-            {
-              "name": "lead_stage",
-              "description": "Lead stage",
-              "type": "string"
-            }
-          ]
-        },
-        "optimizeResponse": true,
-        "dataField": "data",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
-      },
-      "id": "dd305d34-b4a8-4906-a879-65893cf4df68",
-      "name": "create_crm_lead",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [
-        1824,
-        416
-      ],
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_CRM",
-          "name": "CRM API (Bearer)"
-        }
-      },
-      "disabled": true
-    },
-    {
-      "parameters": {
-        "toolDescription": "Create an operational support ticket for issues needing staff.",
-        "method": "POST",
-        "url": "https://example.invalid/support/tickets",
-        "sendBody": true,
-        "specifyBody": "model",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "guest_id",
-              "description": "Guest ID",
-              "type": "string"
-            },
-            {
-              "name": "issue",
-              "description": "Issue",
-              "type": "string"
-            },
-            {
-              "name": "priority",
-              "description": "Priority",
-              "type": "string"
-            },
-            {
-              "name": "channel",
-              "description": "Channel",
-              "type": "string"
-            }
-          ]
-        },
-        "optimizeResponse": true,
-        "dataField": "data",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
-      },
-      "id": "ed2cff3c-3de5-4e57-9742-1417cd36f619",
-      "name": "create_support_ticket",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [
-        1952,
-        416
-      ],
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_SUPPORT",
-          "name": "Support API (Bearer)"
-        }
-      },
-      "disabled": true
-    },
-    {
-      "parameters": {
-        "toolDescription": "Escalate to a human host/manager for refunds, emergencies, exceptions or uncertainty.",
-        "method": "POST",
-        "url": "https://example.invalid/handoff",
-        "sendBody": true,
-        "specifyBody": "model",
-        "placeholderDefinitions": {
-          "values": [
-            {
-              "name": "guest_id",
-              "description": "Guest ID",
-              "type": "string"
-            },
-            {
-              "name": "reason",
-              "description": "Reason",
-              "type": "string"
-            },
-            {
-              "name": "priority",
-              "description": "Priority",
-              "type": "string"
-            },
-            {
-              "name": "summary",
-              "description": "Summary",
-              "type": "string"
-            }
-          ]
-        },
-        "optimizeResponse": true,
-        "dataField": "data",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
-      },
-      "id": "be99e6ff-e744-4b1c-b9f0-6566271e70ad",
-      "name": "human_handoff",
-      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1,
-      "position": [
-        2160,
-        400
-      ],
-      "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_SUPPORT",
-          "name": "Support API (Bearer)"
-        }
-      },
-      "disabled": true
-    },
-    {
-      "parameters": {
-        "jsCode": "// Runs per item so each guest's reply is paired with their own message.\n// The model is told to return JSON; when it doesn't, fall back to a\n// human-handoff rather than sending the guest raw model output as a booking.\nconst raw = String($json.output || $json.text || '').trim();\n\nlet d;\ntry { d = JSON.parse(raw); }\ncatch (e) {\n  const m = raw.match(/\\{[\\s\\S]*\\}/);\n  if (m) { try { d = JSON.parse(m[0]); } catch (_) {} }\n}\nif (!d) d = {\n  intent: 'support',\n  reply: raw || 'Sorry, I could not process that request.',\n  booking_status: 'support',\n  lead_stage: 'needs_human',\n  needs_human: true,\n};\n\nconst o = $('Build Unified Agent Context').item.json;\n\nreturn { json: {\n  ...o, ...d,\n  reply: String(d.reply || ''),\n  channel: o.channel,\n  senderId: o.senderId || '',\n  recipientId: o.recipientId || '',\n  sessionId: o.sessionId || '',\n} };",
-        "mode": "runOnceForEachItem"
-      },
-      "id": "ee67d13c-ec72-4e08-802b-38b47d41a050",
-      "name": "Parse AI Agent Decision",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        2224,
-        192
-      ]
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/record_exchange",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
-        "sendBody": true,
-        "contentType": "raw",
-        "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({p_channel:$('Parse AI Agent Decision').item.json.channel,p_sender_id:$('Parse AI Agent Decision').item.json.senderId,p_in_message_id:$('Parse AI Agent Decision').item.json.messageId||null,p_in_body:$('Parse AI Agent Decision').item.json.text||null,p_out_message_id:$json.message_id||null,p_out_body:$('Parse AI Agent Decision').item.json.reply||null,p_intent:$('Parse AI Agent Decision').item.json.intent||null,p_lead_stage:$('Parse AI Agent Decision').item.json.lead_stage||null,p_booking_status:$('Parse AI Agent Decision').item.json.booking_status||null,p_needs_human:Boolean($('Parse AI Agent Decision').item.json.needs_human),p_check_in:String($('Parse AI Agent Decision').item.json.check_in||''),p_check_out:String($('Parse AI Agent Decision').item.json.check_out||''),p_guest_count:String($('Parse AI Agent Decision').item.json.guests||''),p_property_id:String($('Parse AI Agent Decision').item.json.property_id||'')}) }}",
-        "options": {}
-      },
-      "id": "045cc0f4-ae99-48f9-8407-800955c97da7",
-      "name": "Save To Supabase",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        2896,
-        192
-      ],
-      "credentials": {
-        "supabaseApi": {
-          "id": "CRED_SUPABASE",
-          "name": "Supabase (Bougainvilla)"
-        }
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://graph.instagram.com/v23.0/17841475648867726/messages",
         "sendHeaders": true,
@@ -607,7 +165,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2672,
+        2848,
         192
       ],
       "credentials": {
@@ -1411,7 +969,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// dashboard_metrics() already returns the exact shape the page wants, so\n// this only labels the source and guards the failure case.\nconst r = $json || {};\nconst failed = !!r.error || !r.stats;\n\nif (failed) {\n  return [{ json: { source: 'no_db', generated_at: new Date().toISOString(),\n                    detail: 'Supabase unreachable or schema not installed' } }];\n}\n\nreturn [{ json: {\n  source: 'supabase',\n  generated_at: new Date().toISOString(),\n  stats: r.stats,\n  channels: r.channels || {},\n  message_series: r.message_series || { labels: [], values: [] },\n  recent_leads: Array.isArray(r.recent_leads) ? r.recent_leads : [],\n} }];"
+        "jsCode": "// dashboard_metrics() already returns the exact shape the page wants, so\n// this only labels the source and guards the failure case.\n//\n// Pass every section through. An earlier version listed only stats and\n// dropped bookings, which is why the booking tiles never appeared.\nconst r = $json || {};\nconst failed = !!r.error || !r.stats;\n\nif (failed) {\n  return [{ json: { source: 'no_db', generated_at: new Date().toISOString(),\n                    detail: 'Supabase unreachable or schema not installed' } }];\n}\n\nreturn [{ json: {\n  source: 'supabase',\n  generated_at: new Date().toISOString(),\n  stats: r.stats,\n  channels: r.channels || {},\n  message_series: r.message_series || { labels: [], values: [] },\n  recent_leads: Array.isArray(r.recent_leads) ? r.recent_leads : [],\n  bookings:  r.bookings  || null,\n  occupancy: r.occupancy || null,\n  economics: r.economics || null,\n  tariff:    r.tariff    || null,\n} }];"
       },
       "id": "0a1c9d2e-7b64-4a11-9f30-2c5e1a77b033",
       "name": "Shape Dashboard Metrics",
@@ -1436,6 +994,216 @@
         896,
         2304
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/get_guest_state",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({p_channel:$json.channel,p_sender_id:$json.senderId}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        192
+      ],
+      "id": "load-guest-state",
+      "name": "Load Guest State",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CRED_SUPABASE",
+          "name": "Supabase (Bougainvilla)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ask the model ONE narrow question: what does THIS message add?\n// It never decides what to say next — that is the state table's job.\nconst ev = $('Normalize Instagram Event').item.json;\nconst st = $json && $json.slots ? $json : {};\nconst slots = st.slots || {};\nconst today = st.today || new Date().toISOString().slice(0, 10);\nconst dow = new Date(today + 'T00:00:00Z').toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });\n\nconst known = {\n  check_in:   slots.check_in   || null,\n  nights:     slots.nights     || null,\n  pax:        slots.pax        || null,\n  occasion:   slots.occasion   || null,\n  guest_name: slots.guest_name || null,\n  phone:      slots.phone      || null,\n};\n\nconst prompt = [\n  'Today is ' + today + ', a ' + dow + '.',\n  'We are already holding these answers from this guest: ' + JSON.stringify(known),\n  '',\n  'The guest has just written:',\n  '\"\"\"' + String(ev.text || '').slice(0, 1500) + '\"\"\"',\n  '',\n  'Read ONLY that message and report what it adds. Return JSON with these keys:',\n  '  check_in    YYYY-MM-DD, or \"\" if this message gives no arrival date.',\n  '              Resolve relative dates against today: \"this weekend\", \"14th\",',\n  '              \"next Friday\", \"agle mahine 5\" all become real dates.',\n  '  nights      whole number of nights, or \"\" if not stated. \"2 din\" = 2.',\n  '              A date range like \"14 to 16\" means 2 nights.',\n  '  pax         number of guests, or \"\". \"8 log\", \"we are 6\", \"family of 4\".',\n  '  occasion    birthday / anniversary / corporate / family trip, or \"\".',\n  '  guest_name  only if they give a name to book under, else \"\".',\n  '  phone       only if they give a phone number, else \"\".',\n  '  agrees      true if this message accepts what was just offered',\n  '              (\"yes\", \"haan\", \"ok book it\", \"go ahead\"), else false.',\n  '  declines    true if it rejects the offer or the dates, else false.',\n  '  wants_human true for a complaint, refund, cancellation, emergency, an',\n  '              attempt to negotiate the price, or anything you are unsure of.',\n  '  language    one of en, hi, hinglish, mr - the language THEY wrote in.',\n  '',\n  'Rules. Leave a key as \"\" unless this message actually states it; do not copy',\n  'the known values back. Never invent a date, a number or a name. If the',\n  'message is only a greeting, every field is \"\" and every flag is false.',\n  'Return the JSON object and nothing else.',\n].join('\\n');\n\nreturn { json: { prompt, senderId: ev.senderId } };",
+        "mode": "runOnceForEachItem"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        192
+      ],
+      "id": "build-extraction-prompt",
+      "name": "Build Extraction Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"You extract structured data from a chat message. Return only a JSON object, no prose.\"},{role:\"user\",content:$json.prompt}],temperature:0,max_tokens:300}) }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1504,
+        192
+      ],
+      "id": "extract-guest-details",
+      "name": "Extract Guest Details",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRED_SARVAM",
+          "name": "Sarvam AI (api-subscription-key)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge what the model read into what we already knew, and validate.\n// Nothing here trusts the model further than a regex will carry it.\nconst ev = $('Normalize Instagram Event').item.json;\nconst st = $('Load Guest State').item.json || {};\nconst prev = st.slots || {};\n\nlet ex = {};\ntry {\n  const raw = String(($json.choices && $json.choices[0] && $json.choices[0].message\n    && $json.choices[0].message.content) || '').trim();\n  const m = raw.match(/\\{[\\s\\S]*\\}/);\n  if (m) ex = JSON.parse(m[0]);\n} catch (e) { ex = {}; }\n// If Sarvam is down we land here with ex = {}. That is survivable: the guest\n// still gets asked for the first empty slot. A dead model must not mean silence.\n\nconst clean = (v) => {\n  const s = String(v == null ? '' : v).trim();\n  return (!s || s === 'null' || s === 'undefined' || s === 'none' || s === 'N/A') ? '' : s;\n};\nconst num = (v) => { const n = parseInt(clean(v), 10); return Number.isFinite(n) && n > 0 ? n : null; };\n\nconst today = st.today || new Date().toISOString().slice(0, 10);\nconst okDate = (s) => {\n  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(s)) return false;\n  const d = Date.parse(s + 'T00:00:00Z');\n  if (!Number.isFinite(d)) return false;\n  const t = Date.parse(today + 'T00:00:00Z');\n  return d >= t - 86400000 && d <= t + 550 * 86400000;   // not the past, not 2030\n};\nconst okPhone = (s) => { const d = s.replace(/\\D/g, ''); return d.length >= 10 && d.length <= 13 ? d : ''; };\nconst okName = (s) => (s.length >= 2 && s.length <= 60 && !/\\d/.test(s)) ? s : '';\n\nconst newIn = clean(ex.check_in);\n// \"Those are taken, 23 September is free\" - \"yes please\". That yes has to\n// mean the date we offered, or the conversation dead-ends here.\nconst offered = String(st.offered_check_in || '').slice(0, 10);\nconst adopting = !okDate(newIn) && ex.agrees === true\n              && st.conv_state === 'UNAVAILABLE' && okDate(offered);\n\nconst slots = {\n  check_in:   okDate(newIn) ? newIn : (adopting ? offered : (prev.check_in || '')),\n  nights:     num(ex.nights) || prev.nights || null,\n  pax:        num(ex.pax)    || prev.pax    || null,\n  occasion:   clean(ex.occasion)          || prev.occasion   || '',\n  guest_name: okName(clean(ex.guest_name)) || prev.guest_name || '',\n  phone:      okPhone(clean(ex.phone))     || prev.phone      || '',\n};\n\n// A new date means the old quote and hold are stale.\nconst datesChanged = okDate(newIn) && prev.check_in && newIn !== String(prev.check_in).slice(0, 10);\n\nreturn { json: {\n  channel: ev.channel, senderId: ev.senderId, messageId: ev.messageId,\n  text: ev.text, today,\n  slots,\n  prevState:  st.conv_state || 'NEW',\n  askedSlot:  st.asked_slot || '',\n  askedCount: Number(st.asked_count || 0),\n  holdLive:   Boolean(st.hold_live) && !datesChanged,\n  datesChanged, adopting,\n  agrees:     ex.agrees === true,\n  declines:   ex.declines === true,\n  wantsHuman: ex.wants_human === true,\n  language:   ['en','hi','hinglish','mr'].includes(clean(ex.language)) ? clean(ex.language)\n              : (st.last_language || 'en'),\n  // quote_stay wants text and tolerates blanks\n  q_check_in: slots.check_in || '',\n  q_nights:   String(slots.nights || 1),\n  q_pax:      slots.pax ? String(slots.pax) : '',\n} };",
+        "mode": "runOnceForEachItem"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        192
+      ],
+      "id": "merge-guest-slots",
+      "name": "Merge Guest Slots"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/quote_stay",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({p_check_in:$json.q_check_in,p_nights:$json.q_nights,p_pax:$json.q_pax}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1888,
+        192
+      ],
+      "id": "quote-and-availability",
+      "name": "Quote And Availability",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CRED_SUPABASE",
+          "name": "Supabase (Bougainvilla)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The state table. This is the determinism: the next question is chosen\n// here, from the slots, and the model is only ever told what to say.\nconst m = $('Merge Guest Slots').item.json;\nconst s = m.slots;\nconst q = ($json && typeof $json === 'object' && !$json.error) ? $json : {};\nconst quoteFailed = !q || q.available === undefined;\n\nconst inr = (n) => '\\u20b9' + Number(n).toLocaleString('en-IN');\nconst nice = (d) => {\n  if (!d) return '';\n  const dt = new Date(String(d).slice(0, 10) + 'T00:00:00Z');\n  return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' });\n};\n\nconst nights = s.nights || 1;\n\n// Agreement is sticky. Once a guest has said yes, giving their name is not a\n// reason to start quoting at them again - which is exactly the loop we are\n// here to kill.\nconst offerStood = m.prevState === 'QUOTED';\nconst committed  = ['NEEDS_NAME', 'NEEDS_PHONE'].includes(m.prevState);\nconst accepted   = committed || (m.agrees && offerStood);\n\nlet state, ask = '', reply = '', offering = '';\n\nif (m.wantsHuman) {\n  state = 'HUMAN';\n  reply = 'Let me get someone from our team onto this - they will message you here shortly.';\n} else if (m.holdLive && !m.datesChanged) {\n  state = 'HELD';\n  reply = 'That one is already held under ' + (s.guest_name || 'your name')\n        + ' - our team will call to confirm. Anything else I can help with?';\n} else if (!s.check_in) {\n  state = 'NEW'; ask = 'check_in';\n  reply = 'Happy to help. Which dates were you looking at?';\n} else if (!s.pax) {\n  state = 'DATES'; ask = 'pax';\n  reply = 'Lovely - ' + nice(s.check_in) + '. How many guests will you be?';\n} else if (quoteFailed || q.error) {\n  state = 'NEW'; ask = 'check_in';\n  reply = 'Sorry, I could not read those dates. Could you send the arrival date as a day and month?';\n} else if (q.over_capacity) {\n  state = 'HUMAN';\n  reply = 'That is a larger group than the villa normally takes - let me get our manager to work it out with you.';\n} else if (q.available === false) {\n  state = 'UNAVAILABLE'; ask = 'check_in';\n  offering = q.next_available_from || '';\n  reply = nice(s.check_in) + ' is already taken, I am afraid.'\n        + (offering ? ' The next free date is ' + nice(offering) + ' - would that work?'\n                    : ' Could you tell me another date that suits you?');\n} else if (m.declines && !accepted) {\n  state = 'NEW'; ask = 'check_in';\n  reply = 'No problem at all. Which other dates would suit you?';\n} else if (!accepted) {\n  state = 'QUOTED'; ask = 'confirm';\n  reply = nice(q.check_in) + ' is free for ' + s.pax + ' guests - ' + inr(q.total)\n        + ' for ' + nights + ' night' + (nights === 1 ? '' : 's') + '. Shall I hold it for you?';\n} else if (!s.guest_name) {\n  state = 'NEEDS_NAME'; ask = 'guest_name';\n  reply = 'Lovely. What name should I put it under?';\n} else if (!s.phone) {\n  state = 'NEEDS_PHONE'; ask = 'phone';\n  reply = 'And a number our caretaker can reach you on?';\n} else {\n  state = 'HOLD_PLACED';\n  reply = 'Done - held for ' + (q.hold_hours || 24) + ' hours under ' + s.guest_name\n        + '. Our team will call you on ' + s.phone + ' to confirm and take payment.';\n}\n\n// Asking the same thing three times is a failure, not persistence.\nconst askedCount = (ask && ask === m.askedSlot) ? m.askedCount + 1 : (ask ? 1 : 0);\nif (ask && askedCount >= 3) {\n  state = 'HUMAN'; ask = '';\n  reply = 'I am not following - let me get someone from our team to help you directly.';\n}\n\nconst needsHuman = state === 'HUMAN';\nconst placeHold  = state === 'HOLD_PLACED' && !m.holdLive;\n\nreturn { json: {\n  ...m,\n  state, ask, askedCount, needsHuman, placeHold, offering,\n  reply,                                   // the deterministic message\n  quoteTotal: (state === 'QUOTED' || state === 'HOLD_PLACED') && q.total != null ? String(q.total) : '',\n  facts: {\n    available: q.available, total: q.total, nights: q.nights,\n    check_in: q.check_in, check_out: q.check_out,\n    next_available_from: q.next_available_from || null,\n  },\n} };",
+        "mode": "runOnceForEachItem"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        192
+      ],
+      "id": "decide-next-question",
+      "name": "Decide Next Question"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The model's second and last job: say the sentence we chose, warmly,\n// in the guest's language. It is given no facts it could get wrong.\nconst d = $json;\nconst langName = { en: 'English', hi: 'Hindi', hinglish: 'Hinglish (Roman script)', mr: 'Marathi' }[d.language] || 'English';\n\nconst prompt = [\n  'You are the Bougainvilla Resorts booking assistant on Instagram.',\n  'Rewrite the message below so it sounds warm and human, and send it in ' + langName + '.',\n  '',\n  'MESSAGE TO SEND:',\n  '\"\"\"' + d.reply + '\"\"\"',\n  '',\n  'Rules:',\n  '- Keep every fact exactly as written: the same dates, the same price, the',\n  '  same name and number. Change nothing factual.',\n  '- Add no new facts. No other prices, no discounts, no amenities, no policies,',\n  '  no promises about confirmation or payment.',\n  '- Ask only the question that is already there. Never add a second question.',\n  '- One or two short sentences. No emoji spam, at most one. No greeting if the',\n  '  conversation is already under way.',\n  '- Return the message text only, with no quotes and no explanation.',\n].join('\\n');\n\nreturn { json: { ...d, prompt } };",
+        "mode": "runOnceForEachItem"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2272,
+        192
+      ],
+      "id": "build-compose-prompt",
+      "name": "Build Compose Prompt"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({model:\"sarvam-105b\",messages:[{role:\"system\",content:\"You rewrite a given message warmly in the language asked for. Never add or change a fact.\"},{role:\"user\",content:$json.prompt}],temperature:0.4,max_tokens:250}) }}",
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2464,
+        192
+      ],
+      "id": "compose-guest-reply",
+      "name": "Compose Guest Reply",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CRED_SARVAM",
+          "name": "Sarvam AI (api-subscription-key)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Take the model's phrasing only if it stayed honest. Otherwise send the\n// deterministic sentence, which is always correct if a little plain.\nconst d = $('Decide Next Question').item.json;\nconst fallback = d.reply;\n\nlet out = '';\ntry {\n  out = String(($json.choices && $json.choices[0] && $json.choices[0].message\n    && $json.choices[0].message.content) || '').trim();\n} catch (e) { out = ''; }\n\nout = out.replace(/^[\"'\\u201c\\u201d]+|[\"'\\u201c\\u201d]+$/g, '').trim();\n\n// Every number of 1000 or more in the reply must be one we gave it. This is\n// what stops a friendly model inventing a rate or a discount.\nconst bigNums = (t) => (String(t).replace(/[,\\u00a0]/g, '').match(/\\d{4,}/g) || []);\nconst allowed = bigNums(fallback);\nconst got = bigNums(out);\nconst invented = got.some((n) => !allowed.includes(n));\nconst dropped = allowed.some((n) => !got.includes(n));\n\nconst bad = !out || out.length < 2 || out.length > 600 || invented || dropped;\n\nreturn { json: { ...d, reply: bad ? fallback : out, replySource: bad ? 'template' : 'model',\n                 composeRejected: bad && !!out } };",
+        "mode": "runOnceForEachItem"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2656,
+        192
+      ],
+      "id": "finalize-reply",
+      "name": "Finalize Reply"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/save_guest_turn",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({p_channel:$('Finalize Reply').item.json.channel,p_sender_id:$('Finalize Reply').item.json.senderId,p_in_message_id:$('Finalize Reply').item.json.messageId||null,p_in_body:$('Finalize Reply').item.json.text||null,p_out_message_id:$json.message_id||null,p_out_body:$('Finalize Reply').item.json.reply||null,p_check_in:String($('Finalize Reply').item.json.slots.check_in||\"\"),p_nights:String($('Finalize Reply').item.json.slots.nights||\"\"),p_pax:String($('Finalize Reply').item.json.slots.pax||\"\"),p_occasion:String($('Finalize Reply').item.json.slots.occasion||\"\"),p_guest_name:String($('Finalize Reply').item.json.slots.guest_name||\"\"),p_phone:String($('Finalize Reply').item.json.slots.phone||\"\"),p_conv_state:$('Finalize Reply').item.json.state,p_asked_slot:$('Finalize Reply').item.json.ask||\"\",p_asked_count:String($('Finalize Reply').item.json.askedCount||0),p_needs_human:Boolean($('Finalize Reply').item.json.needsHuman),p_language:$('Finalize Reply').item.json.language||\"\",p_quoted_total:String($('Finalize Reply').item.json.quoteTotal||\"\"),p_offered_check_in:String($('Finalize Reply').item.json.offering||\"\"),p_place_hold:Boolean($('Finalize Reply').item.json.placeHold)}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3040,
+        192
+      ],
+      "id": "save-conversation-turn",
+      "name": "Save Conversation Turn",
+      "credentials": {
+        "supabaseApi": {
+          "id": "CRED_SUPABASE",
+          "name": "Supabase (Bougainvilla)"
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1494,128 +1262,7 @@
       "main": [
         [
           {
-            "node": "Build Unified Agent Context",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Unified Agent Context": {
-      "main": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Sarvam AI Chat Model": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_languageModel",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Guest Conversation Memory": {
-      "ai_memory": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_memory",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "check_availability": {
-      "ai_tool": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "property_search": {
-      "ai_tool": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "create_booking": {
-      "ai_tool": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "create_crm_lead": {
-      "ai_tool": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "create_support_ticket": {
-      "ai_tool": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "human_handoff": {
-      "ai_tool": [
-        [
-          {
-            "node": "Bougainvilla AI Booking Agent",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Bougainvilla AI Booking Agent": {
-      "main": [
-        [
-          {
-            "node": "Parse AI Agent Decision",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Parse AI Agent Decision": {
-      "main": [
-        [
-          {
-            "node": "Send Instagram AI Reply",
+            "node": "Load Guest State",
             "type": "main",
             "index": 0
           }
@@ -2029,7 +1676,7 @@
       "main": [
         [
           {
-            "node": "Save To Supabase",
+            "node": "Save Conversation Turn",
             "type": "main",
             "index": 0
           }
@@ -2041,6 +1688,105 @@
         [
           {
             "node": "Shape Dashboard Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Guest State": {
+      "main": [
+        [
+          {
+            "node": "Build Extraction Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Extraction Prompt": {
+      "main": [
+        [
+          {
+            "node": "Extract Guest Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Guest Details": {
+      "main": [
+        [
+          {
+            "node": "Merge Guest Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Guest Slots": {
+      "main": [
+        [
+          {
+            "node": "Quote And Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quote And Availability": {
+      "main": [
+        [
+          {
+            "node": "Decide Next Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Next Question": {
+      "main": [
+        [
+          {
+            "node": "Build Compose Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Compose Prompt": {
+      "main": [
+        [
+          {
+            "node": "Compose Guest Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose Guest Reply": {
+      "main": [
+        [
+          {
+            "node": "Finalize Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finalize Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Instagram AI Reply",
             "type": "main",
             "index": 0
           }

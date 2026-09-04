@@ -1,6 +1,12 @@
-# Booking flow and pricing — plan
+# Booking flow and pricing
 
 Two problems, one root cause and one opportunity.
+
+> **Status: built.** The state machine, the pricing engine and the dashboard
+> tiles below are implemented and tested — `supabase/schema.sql`, the eleven
+> Instagram nodes in `n8n/bougainvilla-crm.workflow.json`, and
+> `dashboard/index.html`. What is still missing is your real cost figures; see
+> [What I need from you](#what-i-need-from-you) at the end.
 
 1. The agent asks for dates and guest count, gets told, then asks again.
 2. Weekends are 79–92% full. Weekdays are 17–18% full. All the money is Mon–Thu.
@@ -42,6 +48,14 @@ reply + save
 
 The model never decides *what* to ask. It is told what to ask.
 
+Implemented as `get_guest_state()` → `Extract Guest Details` →
+`Merge Guest Slots` → `quote_stay()` → `Decide Next Question` →
+`Compose Guest Reply` → `save_guest_turn()`.
+
+Every one of the four network calls continues on error and every step has a
+deterministic fallback, so a dead model or a dead database still produces the
+right question rather than silence.
+
 ## The six slots
 
 | # | Slot | Type | Required for |
@@ -67,7 +81,22 @@ Ask for the **first empty slot**. One question per message, two at most.
 | `NEEDS_NAME` | said yes, no name | "Lovely. What name should I put it under?" |
 | `NEEDS_PHONE` | name, no phone | "And a number the caretaker can reach you on?" |
 | `HOLD_PLACED` | all slots | "Held for 24 hours. Our team will call to confirm and take payment." |
+| `HELD` | a live hold, nothing changed | acknowledges instead of re-announcing |
 | `HUMAN` | anything odd | hands off |
+
+Two things the first draft of this table got wrong, both caught by running
+conversations through it:
+
+- **Agreement has to be sticky.** A guest who says "yes", then gives their
+  name, has not stopped agreeing — but a table that re-checks `agrees` on
+  every turn falls back to `QUOTED` and starts quoting at them again. That is
+  the original bug, rebuilt. Once past `QUOTED`, the state stays past it.
+- **"Yes" after `UNAVAILABLE` means the date we offered.** Without somewhere
+  to keep that date the conversation dead-ends, so `leads.offered_check_in`
+  holds it and a bare yes adopts it.
+
+Asking the same slot three times escalates to a human. A loop is a failure,
+not persistence.
 
 Because the state is computed from the slots, a guest who opens with
 *"villa for 8 people on the 14th, 2 nights"* skips straight to `CHECKING`.
@@ -82,7 +111,14 @@ place a 24-hour hold, take name and phone.
 **May not:** confirm a booking, take payment, invent a discount beyond the
 published ladder, promise anything about amenities or policy.
 
-A hold is not a booking. A human confirms and takes payment. That line stays.
+A hold is not a booking. A human confirms and takes payment. That line stays —
+and a live hold blocks the dates for everyone else while it lasts, so two
+guests can never be quoted the same night.
+
+Enforced twice, not just asked for: the model is told to add no facts, and
+`Finalize Reply` then checks that every number of 1,000 or more in the reply
+also appears in the sentence we handed it. Invent a discount and the reply is
+discarded for the plain template.
 
 ---
 
@@ -221,7 +257,7 @@ invents a code. If a guest pushes for more, that is `needs_human`.
 
 # Part 4 · Dashboard additions
 
-New tiles, all computable from `leads` plus a small `costs` table:
+Built, and live in the page:
 
 | Tile | Formula |
 |---|---|
@@ -233,8 +269,13 @@ New tiles, all computable from `leads` plus a small `costs` table:
 | Profit | revenue − fixed − (variable × nights) |
 | Empty weekday nights, next 14 days | the discount ladder's work queue |
 
-The last one is the operational one: it is a list of dates the manager (or a
-scheduled n8n post) should be pushing offers on this week.
+The last one is the operational one: a list of dates the manager (or a
+scheduled n8n post) should be pushing offers on this week, each with the price
+the ladder currently asks.
+
+Profit, break-even and nights-to-break-even stay blank until
+`pricing_config.fixed_monthly` has your real numbers in it. The page says what
+is missing rather than showing a confident wrong figure.
 
 ---
 

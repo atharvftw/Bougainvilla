@@ -10,7 +10,7 @@ Secrets: [../docs/n8n-credentials.md](../docs/n8n-credentials.md)
 | Trigger | What it does |
 |---|---|
 | Meta verification (GET) | Answers Meta's ownership handshake on the Instagram callback URL |
-| Instagram DMs (POST) | Signature-verified → normalised → AI agent → reply in the same thread |
+| Instagram DMs (POST) | Signature-verified → normalised → slot state machine → reply in the same thread |
 | Booking lead webhook | Form lead → live PMS availability → Sarvam sales reply → guest message |
 | Voice agent webhook | Transcript → triage → ticket **only if escalation is needed** → callback |
 | Follow-up scheduler (2-hourly) | Pulls due leads → one AI message each → sends |
@@ -18,10 +18,33 @@ Secrets: [../docs/n8n-credentials.md](../docs/n8n-credentials.md)
 | Review webhook | Sentiment + drafted reply → publish → staff alert if rating ≤ 3 |
 | Dashboard webhook (GET) | Key-protected metrics, read from Supabase, for the Vercel dashboard |
 
-Instagram DMs run through the **Bougainvilla AI Booking Agent** — shared
-conversation memory plus six tools (availability, property search, create
-booking, CRM lead, support ticket, human handoff) — and the reply goes back into
-the same DM thread.
+### The Instagram booking flow
+
+Eleven nodes, and the model is used in exactly two of them:
+
+```
+Instagram webhook → verify signature → normalise
+  → Load Guest State        read the saved slots from Supabase
+  → Build Extraction Prompt
+  → Extract Guest Details   MODEL · what does this one message add?
+  → Merge Guest Slots       merge and validate; a regex has the last word
+  → Quote And Availability  is it free, and what does it cost?
+  → Decide Next Question    the state table — code, not judgement
+  → Build Compose Prompt
+  → Compose Guest Reply     MODEL · say that sentence warmly, in their language
+  → Finalize Reply          reject the model if it invented anything
+  → Send Instagram AI Reply
+  → Save Conversation Turn  slots, state and both messages
+```
+
+The model never decides what to ask. It reads a messy sentence, and it phrases
+a sentence we chose. Everything between those two jobs is deterministic, so the
+same guest saying the same thing gets the same question every time.
+
+Each of the four network calls is set to continue on error, and every step has
+a deterministic fallback: if Sarvam is down the guest is still asked for the
+first empty slot, and if the reply is unusable the plain template goes out
+instead. A dead dependency must never mean silence.
 
 ## Changes from the source workflow
 
@@ -100,16 +123,6 @@ Meta Lead Ads branches are removed, not just disconnected):
   reply is now sent first and logging follows, set to continue on error — a
   CRM that is down costs a log line, never a reply.
 
-**Tool node names must be identifiers**
-
-- n8n exposes a tool node's *name* to the model as the tool name and validates
-  it against `/^[a-zA-Z_][a-zA-Z0-9_]*$/`. The original names
-  (`Tool - Check Availability`) fail on the spaces and hyphen, so the node
-  throws `The name of this tool is not a valid alphanumeric string` before it
-  ever runs. Renamed to `check_availability`, `property_search`,
-  `create_booking`, `create_crm_lead`, `create_support_ticket`,
-  `human_handoff` — which read better to the model anyway.
-
 **Reply as the villa, and only to the villa's DMs**
 
 - `Send Instagram AI Reply` built its URL from `recipientId` — whichever
@@ -122,22 +135,38 @@ Meta Lead Ads branches are removed, not just disconnected):
   villa. Answering a third party's DMs would be wrong even if the token allowed
   it.
 
-**Agent tools: one real, five off**
+**The agent forgot every answer it was given**
 
-- All six tools originally posted to `example.invalid`. The agent called
-  `Tool - Human Handoff` on the first real DM, the request failed, and the
-  failure took the whole execution down — so the guest got nothing.
-- **`Tool - Check Availability` is now real**, backed by Supabase
-  `check_availability()` against the booking ledger. The agent must call it
-  before saying anything about dates.
-- The other five stay **disabled** until a PMS, CRM or support desk exists.
-  The prompt is scoped to match: the agent may state availability and offer the
-  next free date, but may not quote a price, confirm a booking or invent a
-  booking ID — checking is not holding.
+- The old flow hung a LangChain agent off `Guest Conversation Memory`, n8n's
+  in-RAM window buffer. It held a transcript and nothing structured, so on
+  every message the agent re-derived *what do I know about this guest?* from
+  raw chat text inside a prompt that also carried its rules, its output schema
+  and six tool descriptions. It dropped things, and asked again. Guests were
+  answering the same question three times.
+- Nothing was being saved between messages. That was the whole bug, and no
+  amount of prompt engineering was going to fix it.
+- The agent, its memory and its six tools are **gone**. The answers are now
+  columns on `leads`, the next question comes out of a state table in
+  `Decide Next Question`, and availability and price come from `quote_stay()`
+  in one call rather than a tool the model had to remember to use.
+- Five of those six tools posted to `example.invalid` anyway. The agent called
+  `human_handoff` on the first real DM, the request failed, and the failure
+  took the whole execution down — so the guest got nothing at all.
+
+**What the agent may and may not do**
+
+- **May:** state availability, quote the tariff, place a 24-hour hold, take a
+  name and phone number.
+- **May not:** confirm a booking, take payment, negotiate, or invent a
+  discount. A guest who pushes on price is handed to a human, every time.
+- A hold is not a booking: it expires, it blocks the dates while it is live,
+  and a person confirms it.
+- Asking the same slot three times escalates to a human. A loop is a failure,
+  not persistence.
 
 **Persistence**
 
-- Every handled message goes to Supabase through one `record_exchange` call
+- Every handled message goes to Supabase through one `save_guest_turn` call
   that upserts the guest and records both sides of the exchange atomically.
   `messages.provider_message_id` is `UNIQUE`, so a Meta webhook retry
   conflicts and is ignored rather than producing a second reply — the

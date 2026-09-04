@@ -36,7 +36,37 @@ That creates:
 | `messages` | every message in and out; `provider_message_id` unique |
 | `dashboard_metrics()` | one call returning everything the dashboard needs |
 | `record_exchange(...)` | one call recording a whole exchange, atomically |
-| `check_availability(...)` | the agent's tool — is a date range free? |
+| `check_availability(...)` | is a date range free? |
+| `pricing_config` | **one row** holding the tariff, the discount ladder and your costs |
+| `quote_stay(...)` | availability **and** price in one call — what the agent uses |
+| `tariff_nightly(...)` | the tariff night by night, with the reason for each price |
+| `get_guest_state(...)` | the guest's saved slots — read at the top of every turn |
+| `save_guest_turn(...)` | writes the slots, the state and both messages |
+
+### 2a · Put your real costs in
+
+Profit and break-even stay blank until you do this, by design — the dashboard
+will not invent a number it has not been given.
+
+```sql
+update pricing_config set
+  fixed_monthly      = 350000,   -- chef + caretaker + manager + social media
+                                 -- + electricity + internet + maintenance + EMI
+  variable_per_night = 3000      -- laundry, gas, consumables, deep clean
+where id = 1;
+```
+
+Two other decisions live in the same row:
+
+```sql
+-- Friday counts as a weekend by default. Removing 5 moves roughly four
+-- nights a month into the discountable weekday bucket.
+update pricing_config set weekend_dows = '{6,0}' where id = 1;
+
+-- The floor. Never quote below it: cheaper guests cost more in wear than
+-- they pay, and a standing discount teaches the market to wait.
+update pricing_config set weekday_floor = 17000 where id = 1;
+```
 
 RLS is enabled with **no policies**, so the anon key can read nothing. n8n
 uses the service key, which bypasses RLS, and n8n is the only client — the

@@ -30,7 +30,26 @@ only thing that talks to Supabase.
       "booking_status": "enquiry", "needs_human": true,
       "last_message": "do you have a villa free in October?",
       "last_seen_at": "2026-09-04T07:29:00+00:00" }
-  ]
+  ],
+  "bookings": {
+    "total": 6, "upcoming": 6, "nights_this_month": 10, "days_in_month": 30,
+    "next_free": "2026-09-04", "list": [ { "guest": "…", "from": "…", "to": "…", "status": "booked" } ]
+  },
+  "occupancy": {
+    "weekend_available": 12, "weekend_sold": 8, "weekend_fill_pct": 67,
+    "weekday_available": 18, "weekday_sold": 2, "weekday_fill_pct": 11,
+    "empty_weekday_nights_14d": [
+      { "date": "2026-09-07", "dow": "Mon", "price": 17000 }
+    ]
+  },
+  "economics": {
+    "revenue_this_month": 296000, "revenue_basis": "list_tariff",
+    "nights_sold": 10, "avg_rate": 29600,
+    "fixed_monthly": null, "variable_per_night": 3000,
+    "profit": null, "break_even_nights": null, "nights_to_break_even": null
+  },
+  "tariff": { "weekend": 30000, "weekday_list": 28000, "weekday_floor": 17000,
+              "base_pax": 10, "ladder": [ { "min_days": 22, "price": 28000 } ] }
 }
 ```
 
@@ -41,6 +60,16 @@ Notes:
 - `display_name` is often null; Instagram does not send a name with a DM. The
   page falls back to `Guest ####` from the last four digits of the sender id.
 - Guest text is HTML-escaped before rendering.
+- `occupancy.weekday_fill_pct` is the number to manage. Weekends run 67–92%
+  full and weekdays 11–18%, so the weekday bucket is where the unearned
+  revenue sits.
+- `empty_weekday_nights_14d` is a work queue, not a statistic: each entry is a
+  night with nobody in it and the price the ladder currently asks for it.
+- `revenue_basis` is `list_tariff` while the ledger carries no prices, and
+  `quoted` once stays booked through the agent have a `quoted_total`.
+- `economics.profit`, `break_even_nights` and `nights_to_break_even` are
+  **null until `pricing_config.fixed_monthly` is filled in**. The page shows a
+  dash and says what is missing rather than inventing a number.
 
 ## `source` values
 
