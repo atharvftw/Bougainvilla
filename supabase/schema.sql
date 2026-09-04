@@ -1,5 +1,4 @@
--- Bougainvilla CRM — Supabase schema
---
+
 -- Run once in Supabase → SQL Editor → New query → Run.
 --
 -- Everything the dashboard shows comes from here. n8n writes on every
