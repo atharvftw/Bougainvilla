@@ -36,6 +36,7 @@ That creates:
 | `messages` | every message in and out; `provider_message_id` unique |
 | `dashboard_metrics()` | one call returning everything the dashboard needs |
 | `record_exchange(...)` | one call recording a whole exchange, atomically |
+| `check_availability(...)` | the agent's tool — is a date range free? |
 
 RLS is enabled with **no policies**, so the anon key can read nothing. n8n
 uses the service key, which bypasses RLS, and n8n is the only client — the
@@ -87,9 +88,41 @@ Only what is actually tracked:
 Plus messages received per day for 14 days, in/out/guest totals, and the ten
 most recent conversations.
 
-**Deliberately absent:** revenue, occupancy, ratings, bookings. Bougainvilla
-does not track those anywhere yet, so the dashboard does not pretend to. They
-become real tiles when a PMS is connected, not before.
+Plus, once the booking ledger has rows: upcoming stays, nights booked this
+month against the month's length, the next free night, and the next eight
+stays.
+
+**Deliberately absent:** revenue and ratings. Bougainvilla does not track
+those anywhere yet, so the dashboard does not pretend to.
+
+### Bookings vs conversations
+
+Rows on channel `manual_booking` are the existing booking ledger, not people
+who messaged. `dashboard_metrics()` excludes that channel from every
+conversation figure — otherwise 22 bookings would report as 22 "conversations"
+that never happened. They feed the booking tiles instead.
+
+## The availability tool
+
+`check_availability(p_check_in, p_check_out, p_property_id)` is what lets the
+agent answer date questions. It is wired to the **Tool - Check Availability**
+node, which is the only enabled tool.
+
+A stay occupies `[check_in, check_out)`. A same-day row (`check_in =
+check_out`, a day picnic) still blocks that day. Dates arrive as text and bad
+input returns an `error` field rather than raising, so the agent asks the guest
+again instead of the run dying.
+
+```json
+{"available": false, "check_in": "2026-09-19", "check_out": "2026-09-20",
+ "nights": 1,
+ "conflicts": [{"from":"2026-09-19","to":"2026-09-20","held_by":"Agent L","status":"booked"}],
+ "next_available_from": "2026-09-20"}
+```
+
+The agent may state whether dates are free and offer `next_available_from`. It
+still may not quote a price, confirm a booking, or invent a booking ID —
+checking availability is not holding a room.
 
 ## States
 

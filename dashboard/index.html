@@ -111,6 +111,18 @@ tbody tr:hover{background:var(--border-soft)}
 .empty-title{font-size:14px; font-weight:600; color:var(--ink-2); margin-bottom:5px}
 .empty-note{font-size:12.5px; max-width:400px; margin:0 auto; line-height:1.6}
 
+.meter{height:6px; border-radius:999px; background:var(--border-soft); overflow:hidden; margin-top:9px}
+.meter-fill{height:100%; background:var(--accent); border-radius:999px}
+.free{display:flex; align-items:baseline; gap:8px; margin-top:2px}
+.free-date{font-size:19px; font-weight:700; letter-spacing:-.02em}
+.stay{display:flex; align-items:center; gap:12px; padding:10px 0;
+  border-top:1px solid var(--border-soft)}
+.stay:first-child{border-top:0}
+.stay-when{font-size:12.5px; font-weight:600; font-variant-numeric:tabular-nums;
+  white-space:nowrap; min-width:112px}
+.stay-who{flex:1; font-size:13px; color:var(--ink-2)}
+.stay-nights{font-size:12px; color:var(--ink-3); white-space:nowrap}
+
 .foot{font-size:12px; color:var(--ink-3); text-align:center; margin-top:26px}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
   background:var(--border-soft); padding:1px 5px; border-radius:4px}
@@ -162,6 +174,33 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
       <div class="chart" id="chart-wrap"></div>
       <div class="flow" id="flow"></div>
     </div>
+  </div>
+
+  <div class="tiles" id="booking-tiles" hidden>
+    <div class="tile">
+      <div class="tile-label">Upcoming stays</div>
+      <div class="tile-value" id="b-upcoming">—</div>
+      <div class="tile-note" id="b-total"></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Booked this month</div>
+      <div class="tile-value" id="b-nights">—</div>
+      <div class="tile-note" id="b-occ"></div>
+      <div class="meter"><div class="meter-fill" id="b-meter" style="width:0%"></div></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Next free night</div>
+      <div class="free"><span class="free-date" id="b-free">—</span></div>
+      <div class="tile-note" id="b-free-note"></div>
+    </div>
+  </div>
+
+  <div class="card" id="stays-card" hidden>
+    <div class="card-head">
+      <span class="card-title">Upcoming stays</span>
+      <span class="card-sub" id="stays-sub"></span>
+    </div>
+    <div class="card-body" id="stays-body"></div>
   </div>
 
   <div class="card">
@@ -272,6 +311,8 @@ function renderMetrics(d){
      <div class="flow-item"><span class="flow-num">${n(s.total_leads)}</span>
        <span class="flow-lab">guests total</span></div>`;
 
+  renderBookings(d.bookings);
+
   const leads = Array.isArray(d.recent_leads) ? d.recent_leads : [];
   $('recent-count').textContent = leads.length ? `${leads.length} most recent` : '';
 
@@ -298,9 +339,62 @@ function renderMetrics(d){
     }).join('') + '</tbody></table>';
 }
 
+// Bookings come from the ledger in `leads` (channel manual_booking plus any
+// the agent records). Hidden entirely when there are none, rather than
+// showing a row of zeros.
+const DAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d)) return esc(iso);
+  return `${DAY[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
+}
+function nightsBetween(a, b){
+  const ms = new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00');
+  return Math.max(1, Math.round(ms / 86400000));
+}
+
+function renderBookings(b){
+  const tiles = $('booking-tiles'), card = $('stays-card');
+  if(!b || !Number(b.total)){ tiles.hidden = true; card.hidden = true; return; }
+  tiles.hidden = false;
+
+  $('b-upcoming').textContent = Number(b.upcoming || 0).toLocaleString('en-IN');
+  $('b-total').textContent    = `${Number(b.total).toLocaleString('en-IN')} on the books`;
+
+  const nights = Number(b.nights_this_month || 0);
+  const days   = Number(b.days_in_month || 30);
+  const pct    = days ? Math.round((nights / days) * 100) : 0;
+  $('b-nights').textContent = `${nights}/${days}`;
+  $('b-occ').textContent    = `${pct}% of this month`;
+  $('b-meter').style.width  = pct + '%';
+
+  $('b-free').textContent = b.next_free ? fmtDate(b.next_free) : '—';
+  $('b-free-note').textContent = b.next_free
+    ? (b.next_free <= new Date().toISOString().slice(0,10) ? 'free tonight' : 'first open date')
+    : 'nothing free in the next 120 days';
+
+  const list = Array.isArray(b.list) ? b.list : [];
+  if(!list.length){ card.hidden = true; return; }
+  card.hidden = false;
+  $('stays-sub').textContent = `next ${list.length}`;
+  $('stays-body').innerHTML = list.map(st => {
+    const n = nightsBetween(st.from, st.to);
+    return `<div class="stay">
+      <span class="stay-when">${fmtDate(st.from)}</span>
+      <span class="stay-who">${esc(st.guest || 'Guest')}</span>
+      <span class="stay-nights">${n} night${n===1?'':'s'}</span>
+      <span class="badge ${st.status === 'occupied' ? 'wait' : 'ok'}">${esc(st.status || 'booked')}</span>
+    </div>`;
+  }).join('');
+}
+
 function showBlank(){
   ['t-conversations','t-active','t-today','t-human'].forEach(id => $(id).textContent = '—');
   drawBars([], []);
+  $('booking-tiles').hidden = true;
+  $('stays-card').hidden = true;
   $('flow').innerHTML = '';
   $('recent-body').innerHTML = '';
 }

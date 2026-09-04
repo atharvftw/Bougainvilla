@@ -56,9 +56,12 @@ create index if not exists messages_sender  on messages (channel, sender_id, cre
 -- ─────────────────────────────────────────────────────────────
 -- one call, everything the dashboard needs
 --
--- Returns real counts only. Anything Bougainvilla does not yet track
--- (revenue, ratings) is omitted rather than faked, and the dashboard
--- renders those tiles as "not tracked yet".
+-- Conversation stats deliberately EXCLUDE channel 'manual_booking':
+-- those rows are the existing booking ledger, not people who messaged.
+-- Counting them would report 22 "conversations" that never happened.
+--
+-- Returns real counts only. Anything Bougainvilla does not track
+-- (revenue, ratings) is omitted rather than faked.
 -- ─────────────────────────────────────────────────────────────
 create or replace function dashboard_metrics()
 returns json
@@ -66,58 +69,99 @@ language sql
 stable
 as $$
   with
+  chat as (select * from messages where channel <> 'manual_booking'),
   windowed as (
     select
-      count(*) filter (where direction = 'in')                                as messages_in,
-      count(*) filter (where direction = 'out')                               as messages_out,
-      count(*) filter (where created_at >= date_trunc('day', now()))          as messages_today,
-      count(distinct sender_id)                                               as people
-    from messages
+      count(*) filter (where direction = 'in')                       as messages_in,
+      count(*) filter (where direction = 'out')                      as messages_out,
+      count(*) filter (where created_at >= date_trunc('day', now())) as messages_today,
+      count(distinct sender_id)                                      as people
+    from chat
   ),
   lead_counts as (
     select
-      count(*)                                                                as total_leads,
-      count(*) filter (where needs_human)                                     as needs_human,
-      count(*) filter (where last_seen_at >= now() - interval '7 days')       as active_7d
-    from leads
+      count(*)                                                          as total_leads,
+      count(*) filter (where needs_human)                               as needs_human,
+      count(*) filter (where last_seen_at >= now() - interval '7 days') as active_7d
+    from leads where channel <> 'manual_booking'
   ),
   by_channel as (
-    select channel, count(distinct sender_id) as n
-    from messages group by channel
+    select channel, count(distinct sender_id) as n from chat group by channel
   ),
   daily as (
     -- keep the date itself: ordering by the formatted label would sort
     -- "01 Sep" before "22 Aug" and scramble the chart
-    select d::date                as day,
-           to_char(d, 'DD Mon')   as label,
-           (select count(*) from messages m
+    select d::date              as day,
+           to_char(d, 'DD Mon') as label,
+           (select count(*) from chat m
              where m.direction = 'in' and m.created_at::date = d::date) as value
     from generate_series((now() - interval '13 days')::date, now()::date, '1 day') d
   ),
   recent as (
     select l.sender_id, l.display_name, l.lead_stage, l.booking_status,
            l.needs_human, l.last_seen_at,
-           (select body from messages m
+           (select body from chat m
              where m.sender_id = l.sender_id and m.direction = 'in'
              order by m.created_at desc limit 1) as last_message
-    from leads l order by l.last_seen_at desc limit 10
+    from leads l where l.channel <> 'manual_booking'
+    order by l.last_seen_at desc limit 10
+  ),
+  -- ── bookings ──
+  -- A stay occupies [check_in, check_out); a same-day booking (a day
+  -- picnic, where check_in = check_out) still occupies that one day.
+  stays as (
+    select sender_id, display_name, check_in,
+           greatest(check_out, check_in + 1) as occ_end,
+           booking_status
+    from leads
+    where check_in is not null
+      and booking_status in ('booked','occupied')
+  ),
+  booked_days as (
+    select distinct d::date as day
+    from stays, generate_series(check_in, occ_end - 1, '1 day') d
+    where d >= date_trunc('month', now())::date
+      and d <  (date_trunc('month', now()) + interval '1 month')::date
+  ),
+  upcoming as (
+    select display_name, check_in, occ_end, booking_status
+    from stays where occ_end > now()::date
+    order by check_in limit 8
   )
   select json_build_object(
     'stats', json_build_object(
-      'conversations',  (select people        from windowed),
-      'active_leads',   (select active_7d     from lead_counts),
+      'conversations',  (select people         from windowed),
+      'active_leads',   (select active_7d      from lead_counts),
       'messages_today', (select messages_today from windowed),
-      'needs_human',    (select needs_human   from lead_counts),
-      'messages_in',    (select messages_in   from windowed),
-      'messages_out',   (select messages_out  from windowed),
-      'total_leads',    (select total_leads   from lead_counts)
+      'needs_human',    (select needs_human    from lead_counts),
+      'messages_in',    (select messages_in    from windowed),
+      'messages_out',   (select messages_out   from windowed),
+      'total_leads',    (select total_leads    from lead_counts)
     ),
     'channels',       (select coalesce(json_object_agg(channel, n), '{}'::json) from by_channel),
     'message_series', json_build_object(
       'labels', (select coalesce(json_agg(label order by day), '[]'::json) from daily),
       'values', (select coalesce(json_agg(value order by day), '[]'::json) from daily)
     ),
-    'recent_leads',   (select coalesce(json_agg(recent), '[]'::json) from recent)
+    'recent_leads',   (select coalesce(json_agg(recent), '[]'::json) from recent),
+    'bookings', json_build_object(
+      'total',          (select count(*) from stays),
+      'upcoming',       (select count(*) from stays where occ_end > now()::date),
+      'nights_this_month', (select count(*) from booked_days),
+      'days_in_month',  (select extract(day from (date_trunc('month', now())
+                          + interval '1 month - 1 day'))::int),
+      'next_free',      (select min(c.cand)::text
+                           from (select g::date as cand from generate_series(
+                                   now()::date, now()::date + 120, '1 day') g) c
+                          where not exists (
+                            select 1 from stays s
+                            where c.cand >= s.check_in and c.cand < s.occ_end)),
+      'list',           (select coalesce(json_agg(json_build_object(
+                            'guest',  display_name,
+                            'from',   check_in,
+                            'to',     occ_end,
+                            'status', booking_status)), '[]'::json) from upcoming)
+    )
   );
 $$;
 
@@ -204,5 +248,90 @@ begin
   end if;
 
   return json_build_object('ok', true, 'sender_id', p_sender_id);
+end;
+$$;
+
+
+-- ─────────────────────────────────────────────────────────────
+-- The agent's availability check.
+--
+-- Called from n8n as a tool: POST /rest/v1/rpc/check_availability
+-- Dates arrive as text because the model may send "" or nonsense; bad
+-- input returns an error object rather than raising, so the agent can
+-- ask the guest again instead of the run dying.
+-- ─────────────────────────────────────────────────────────────
+create or replace function check_availability(
+  p_check_in    text,
+  p_check_out   text default null,
+  p_property_id text default 'bougainvilla'
+) returns json
+language plpgsql
+stable
+as $$
+declare
+  v_in     date;
+  v_out    date;
+  v_confl  json;
+  v_free   date;
+  v_count  int;
+begin
+  begin
+    v_in := nullif(trim(coalesce(p_check_in,'')), '')::date;
+  exception when others then
+    return json_build_object('error','bad_check_in',
+      'message','Could not read the check-in date. Ask the guest for it as YYYY-MM-DD.');
+  end;
+  if v_in is null then
+    return json_build_object('error','missing_check_in',
+      'message','No check-in date given. Ask the guest which dates they want.');
+  end if;
+
+  begin
+    v_out := nullif(trim(coalesce(p_check_out,'')), '')::date;
+  exception when others then v_out := null;
+  end;
+  -- a single night, or a day visit, if no check-out was given
+  if v_out is null or v_out <= v_in then v_out := v_in + 1; end if;
+
+  select count(*), coalesce(json_agg(json_build_object(
+           'from', l.check_in, 'to', greatest(l.check_out, l.check_in + 1),
+           'held_by', l.display_name, 'status', l.booking_status)), '[]'::json)
+    into v_count, v_confl
+  from leads l
+  where l.check_in is not null
+    and l.booking_status in ('booked','occupied')
+    and coalesce(l.property_id, 'bougainvilla') = coalesce(p_property_id, 'bougainvilla')
+    and v_in < greatest(l.check_out, l.check_in + 1)
+    and l.check_in < v_out;
+
+  if v_count = 0 then
+    return json_build_object(
+      'available', true, 'property_id', p_property_id,
+      'check_in', v_in, 'check_out', v_out,
+      'nights', (v_out - v_in),
+      'message', 'These dates are free.');
+  end if;
+
+  -- First date from which the whole stay fits. Plain range overlap:
+  -- a candidate [cand, cand+nights) must not intersect any held stay.
+  -- generate_series over dates yields timestamptz, hence the ::date cast.
+  select min(c.cand) into v_free
+  from (select g::date as cand
+          from generate_series(v_in, v_in + 180, '1 day') g) c
+  where not exists (
+    select 1 from leads l
+    where l.check_in is not null
+      and l.booking_status in ('booked','occupied')
+      and coalesce(l.property_id,'bougainvilla') = coalesce(p_property_id,'bougainvilla')
+      and c.cand < greatest(l.check_out, l.check_in + 1)
+      and l.check_in < c.cand + (v_out - v_in));
+
+  return json_build_object(
+    'available', false, 'property_id', p_property_id,
+    'check_in', v_in, 'check_out', v_out,
+    'nights', (v_out - v_in),
+    'conflicts', v_confl,
+    'next_available_from', v_free,
+    'message', 'Those dates are taken.');
 end;
 $$;

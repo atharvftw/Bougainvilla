@@ -100,15 +100,18 @@ Meta Lead Ads branches are removed, not just disconnected):
   reply is now sent first and logging follows, set to continue on error — a
   CRM that is down costs a log line, never a reply.
 
-**Agent tools are off until a backend exists**
+**Agent tools: one real, five off**
 
-- All six tools post to `example.invalid`. The agent called `Tool - Human
-  Handoff` on the first real DM, the request failed, and the failure took the
-  whole execution down — so the guest got nothing. They ship **disabled**.
-- With no tools the agent must not imply it can look anything up, so its prompt
-  now forbids stating availability, quoting prices or confirming bookings, and
-  directs it to gather dates, guest count and property preference then flag
-  `needs_human`. Re-enable each tool in the n8n UI as its backend is connected.
+- All six tools originally posted to `example.invalid`. The agent called
+  `Tool - Human Handoff` on the first real DM, the request failed, and the
+  failure took the whole execution down — so the guest got nothing.
+- **`Tool - Check Availability` is now real**, backed by Supabase
+  `check_availability()` against the booking ledger. The agent must call it
+  before saying anything about dates.
+- The other five stay **disabled** until a PMS, CRM or support desk exists.
+  The prompt is scoped to match: the agent may state availability and offer the
+  next free date, but may not quote a price, confirm a booking or invent a
+  booking ID — checking is not holding.
 
 **Persistence**
 

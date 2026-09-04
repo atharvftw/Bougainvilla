@@ -141,7 +141,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Runs per item: one webhook can carry several DMs.\nconst j = $json;\nconst c = {\n  channel: j.channel,\n  senderId: j.senderId || '',\n  recipientId: j.recipientId || '',\n  sessionId: j.sessionId || '',\n  messageId: j.messageId || '',\n  lead: j.lead || null,\n  userMessage: String(j.text || '').trim(),\n};\n\nreturn { json: { ...j, agentPrompt: `You are the Bougainvilla Resorts booking assistant, replying to a guest on ${j.channel}.\n\nYou have NO access to live availability, prices, or a booking system. Never state or imply that a date is free, quote a price, confirm a booking, or invent a booking ID, policy or amenity. If asked, say plainly that you will have the team confirm.\n\nYour job on each message: answer warmly and briefly, and collect what the team needs to reply properly - dates, number of guests, which property or location, and any special requirements. Ask at most one or two questions at a time. Match the guest's language (English, Hindi, Hinglish or Marathi).\n\nGuest context=${JSON.stringify(c)}.\n\nReturn ONLY valid JSON with keys intent,reply,booking_status,lead_stage,needs_human,property_id,check_in,check_out,guests,booking_id. Put the message to the guest in \"reply\". Use booking_status=\"enquiry\" and set needs_human=true once you have the dates and guest count, or immediately for refunds, complaints, emergencies or anything you are unsure of. Leave fields you do not know as empty strings.` } };",
+        "jsCode": "// Runs per item: one webhook can carry several DMs.\nconst j = $json;\nconst c = {\n  channel: j.channel,\n  senderId: j.senderId || '',\n  recipientId: j.recipientId || '',\n  sessionId: j.sessionId || '',\n  messageId: j.messageId || '',\n  userMessage: String(j.text || '').trim(),\n  today: new Date().toISOString().slice(0, 10),\n};\n\nreturn { json: { ...j, agentPrompt: `You are the Bougainvilla Resorts booking assistant, replying to a guest on ${j.channel}. Today is ${c.today}.\n\nAVAILABILITY — you have one tool, check_availability. Call it before you say anything about dates being free or taken; never guess. Pass dates as YYYY-MM-DD. If the guest gives one date only, pass it as check_in and leave check_out empty. Work out real dates yourself: \"this weekend\", \"14th\", \"next Friday\" become actual dates relative to today. If the guest has not given a date, ask for one rather than calling the tool.\n- available true → say the dates are free and ask for guest count and any preferences to hold it.\n- available false → say those dates are taken and offer next_available_from as an alternative.\n- an error field → ask the guest to confirm the dates.\n\nEVERYTHING ELSE you do NOT have: no prices, no payment links, no confirmed bookings, no policies, no amenity list. Never quote a rate, never say a booking is confirmed, never invent a booking ID. Checking availability is not the same as holding a room — say the team will confirm.\n\nBe warm and brief. Collect dates, guest count and any special requirements. Ask one or two questions at a time. Match the guest's language (English, Hindi, Hinglish or Marathi).\n\nGuest context=${JSON.stringify(c)}.\n\nReturn ONLY valid JSON with keys intent,reply,booking_status,lead_stage,needs_human,property_id,check_in,check_out,guests,booking_id. Put the guest-facing message in \"reply\". Put any dates you checked into check_in and check_out as YYYY-MM-DD. Use booking_status=\"availability_checked\" once you have called the tool, otherwise \"enquiry\". Set needs_human=true when dates are free and the guest wants to proceed, or immediately for refunds, complaints, emergencies or anything you are unsure of. Leave unknown fields as empty strings.` } };",
         "mode": "runOnceForEachItem"
       },
       "id": "9aedb39d-961c-49de-8c01-2a562efb4a97",
@@ -185,7 +185,7 @@
         "promptType": "define",
         "text": "={{ $json.agentPrompt }}",
         "options": {
-          "systemMessage": "You are the Bougainvilla Resorts booking assistant. You understand Hindi, Hinglish, Marathi and English. You have no live data sources: never invent availability, prices, booking IDs, policies or amenities, and never promise anything the team has not confirmed. Be warm, brief and concrete. Always return the JSON schema the user prompt asks for, and nothing else.",
+          "systemMessage": "You are the Bougainvilla Resorts booking assistant. You understand Hindi, Hinglish, Marathi and English. Use the check_availability tool for any question about dates - never assert availability from memory. You have no prices, no booking system and no policy document: never quote a rate, confirm a booking, or invent a booking ID, policy or amenity. Be warm and brief. Always return the JSON schema the user prompt asks for, and nothing else.",
           "maxIterations": 8,
           "returnIntermediateSteps": false
         }
@@ -216,39 +216,28 @@
     },
     {
       "parameters": {
-        "toolDescription": "Check live availability and price before promising anything.",
+        "toolDescription": "Check whether the villa is free for a date range. ALWAYS call this before saying anything about availability. Dates must be YYYY-MM-DD. If the guest gives only one date, pass it as check_in and leave check_out empty. Returns available true/false, any conflicting bookings, and next_available_from when taken.",
         "method": "POST",
-        "url": "https://example.invalid/pms/availability",
+        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/rpc/check_availability",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
         "sendBody": true,
-        "specifyBody": "model",
+        "specifyBody": "json",
+        "jsonBody": "{\"p_check_in\": \"{check_in}\", \"p_check_out\": \"{check_out}\"}",
         "placeholderDefinitions": {
           "values": [
             {
-              "name": "property_id",
-              "description": "Optional property ID",
-              "type": "string"
-            },
-            {
               "name": "check_in",
-              "description": "Check-in YYYY-MM-DD",
+              "description": "Check-in date, YYYY-MM-DD",
               "type": "string"
             },
             {
               "name": "check_out",
-              "description": "Check-out YYYY-MM-DD",
+              "description": "Check-out date, YYYY-MM-DD. Empty for a single night or day visit.",
               "type": "string"
-            },
-            {
-              "name": "guests",
-              "description": "Guest count",
-              "type": "number"
             }
           ]
-        },
-        "optimizeResponse": true,
-        "dataField": "data",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBearerAuth"
+        }
       },
       "id": "2af5ace0-9a3c-4fba-9e2c-2d64a2c631d7",
       "name": "Tool - Check Availability",
@@ -259,12 +248,11 @@
         416
       ],
       "credentials": {
-        "httpBearerAuth": {
-          "id": "CRED_PMS",
-          "name": "PMS API (Bearer)"
+        "supabaseApi": {
+          "id": "CRED_SUPABASE",
+          "name": "Supabase (Bougainvilla)"
         }
-      },
-      "disabled": true
+      }
     },
     {
       "parameters": {
