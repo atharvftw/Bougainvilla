@@ -156,13 +156,20 @@ curl "https://your-n8n/webhook/bougainvilla-instagram?hub.mode=subscribe&hub.ver
 # expect: 403
 curl -i "https://your-n8n/webhook/bougainvilla-instagram?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=test123"
 
-# expect: rejected — unsigned
+# returns 200 {"message":"Workflow was started"} - this is CORRECT, see below
 curl -X POST -H 'content-type: application/json' -d '{"entry":[]}' \
   https://your-n8n/webhook/bougainvilla-instagram
 ```
 
-If the third succeeds, `META_APP_SECRET` isn't reaching the Code node. Fix that
-before pointing Meta at the URL.
+**The third one always returns 200.** The POST webhook acks on receipt and runs
+the flow afterwards, because Meta retries and eventually disables a subscription
+that does not answer within a couple of seconds. The status code says nothing
+about whether the payload was accepted.
+
+Check the **Executions** tab instead. That run must show
+`Verify Instagram Signature` failed with `Invalid X-Hub-Signature-256`, and
+nothing after it. If the flow got past that node, the signature check is not
+working — fix it before pointing Meta at the URL.
 
 ---
 

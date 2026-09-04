@@ -43,13 +43,15 @@ curl "https://n8n.yourdomain.com/webhook/bougainvilla-instagram?hub.mode=subscri
 # should return 403
 curl -i "https://n8n.yourdomain.com/webhook/bougainvilla-instagram?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=test123"
 
-# should be rejected — no valid signature
+# returns 200 {"message":"Workflow was started"} - expected, see below
 curl -X POST -H 'content-type: application/json' -d '{"entry":[]}' \
   https://n8n.yourdomain.com/webhook/bougainvilla-instagram
 ```
 
-If the third one succeeds, `META_APP_SECRET` isn't reaching the Code node — stop
-and fix that before pointing Meta at it.
+The third returns 200 whatever you send it: the POST webhook acks on receipt and
+verifies afterwards, so Meta gets its fast response. Confirm rejection in the
+**Executions** tab — the run must fail at `Verify Instagram Signature` with
+`Invalid X-Hub-Signature-256`.
 
 ---
 

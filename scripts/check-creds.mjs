@@ -125,9 +125,16 @@ if (process.env.N8N_BASE) {
     if (bad.status === 403) pass('Wrong verify token is rejected with 403');
     else fail(`Wrong verify token returned HTTP ${bad.status}`, 'expected 403');
 
+    // The POST webhook acks on receipt and verifies afterwards, so Meta gets a
+    // fast 200. The status code here therefore proves nothing either way —
+    // rejection is visible in n8n's Executions tab, not in this response.
     const unsigned = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{"entry":[]}' });
-    if (!unsigned.ok) pass('Unsigned POST is rejected', `HTTP ${unsigned.status}`);
-    else fail('Unsigned POST was ACCEPTED', 'META_APP_SECRET is not reaching the Code node. Anyone could inject fake bookings — fix before going live.');
+    if (unsigned.ok) {
+      pass('Unsigned POST acked', `HTTP ${unsigned.status} — expected`);
+      console.log('      \x1b[2mNow open n8n → Executions. That run MUST fail at "Verify Instagram\n      Signature" with "Invalid X-Hub-Signature-256". If it got further, the\n      signature check is not working.\x1b[0m');
+    } else {
+      warn(`Unsigned POST returned HTTP ${unsigned.status}`, 'Expected 200 (ack on receipt). Check the workflow is active.');
+    }
   } catch (e) { fail('Could not reach n8n', e.message); }
 } else {
   head('5 · n8n webhook');
