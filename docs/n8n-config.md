@@ -43,7 +43,7 @@ the top of the node, in a marked block. Open the node, paste, save.
 | Node | Constant | Value |
 |---|---|---|
 | **Check Meta Verify Token** | `META_VERIFY_TOKEN` | the string you type into Meta's "Verify token" box |
-| **Verify Instagram Signature** | `META_APP_SECRET` | App settings → Basic → App Secret |
+| **Verify Instagram Signature** | `META_APP_SECRET` | Instagram → API setup with Instagram login → **Instagram app secret** (*not* App settings → Basic) |
 | **Authorize Dashboard Request** | `DASHBOARD_API_KEY` | `openssl rand -hex 32`, same value as in Vercel |
 
 ```js

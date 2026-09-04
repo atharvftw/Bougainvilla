@@ -36,14 +36,25 @@ No Facebook Page is required on this route.
 
 ---
 
-## Step 1 · App Secret → `META_APP_SECRET`
+## Step 1 · Instagram app secret → `META_APP_SECRET`
 
-In your app: **App settings → Basic** → next to **App Secret** click **Show**.
+**Instagram → API setup with Instagram login** → the panel showing **app name,
+Instagram app ID and Instagram app secret** → **Show** next to the secret.
 
 → `META_APP_SECRET` ✅
 
-This signs every incoming webhook. The workflow rejects traffic when it is
-unset — deliberate, not a bug.
+### ⚠️ Not the one under App settings → Basic
+
+This route has **two** app secrets and they are not interchangeable:
+
+| Secret | Where | Used for |
+|---|---|---|
+| **Instagram app secret** | Instagram → API setup with Instagram login | ✅ signs webhooks on this route |
+| Facebook App Secret | App settings → Basic | the Facebook Login route — not this one |
+
+Both are 32 hex characters, so the wrong one looks entirely plausible and fails
+only when a webhook arrives, as `Invalid X-Hub-Signature-256`. If verification
+fails with a secret you are sure of, this is why.
 
 ---
 

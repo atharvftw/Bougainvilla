@@ -15,7 +15,7 @@ Uses **Instagram API with Instagram Login** — no Facebook Page required.
 
 | Variable | Where to get it |
 |---|---|
-| `META_APP_SECRET` | App settings → Basic → **App Secret** |
+| `META_APP_SECRET` | Instagram → API setup with Instagram login → **Instagram app secret**. Not the Facebook App Secret under App settings → Basic — this route signs with the Instagram one, and both are 32 hex characters |
 | `META_ACCESS_TOKEN` | Instagram → API setup → **Generate access tokens → Add account** |
 | `INSTAGRAM_BUSINESS_ID` | shown beside the token on the same panel |
 | `META_VERIFY_TOKEN` | **You invent this.** `openssl rand -hex 16`. Paste the same value into Meta's "Verify token" box |
