@@ -77,6 +77,19 @@ Meta Lead Ads branches are removed, not just disconnected):
 - `META_ACCESS_TOKEN` moved out of the query string into an `Authorization`
   header, so it stops appearing in access logs.
 
+**Instagram event handling**
+
+- Meta fires a webhook for **every message the business sends**
+  (`message.is_echo`). Nothing filtered it, so the agent would have read its
+  own reply, answered it, and looped — spending a model call and DMing the
+  guest on every pass. Echoes, read/delivery receipts, reactions, deleted
+  messages and text-less events are now dropped, ending the branch cleanly.
+- One webhook can carry several DMs from different people. The normaliser took
+  only `entry[0].messaging[0]`, and the two Code nodes after it ran once for
+  all items and returned one result — so extra messages were silently dropped,
+  and a `.first()` lookup would have paired a reply with the wrong guest. All
+  three now handle every message, paired per item.
+
 **Behaviour**
 
 - The original routed channels through chained IFs, with the `meta_ads` branch
