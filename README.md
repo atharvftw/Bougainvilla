@@ -11,7 +11,7 @@ Marketing and operations workspace for Bougainvilla Resorts.
 | `supabase/` | Database schema — the only place data lives |
 | `docs/` | Setup, credentials, data contract, content plan |
 | `deliverables/` | Finished client-facing files |
-| `scripts/` | Generators for anything in `deliverables/` |
+| `scripts/` | Credential checker, n8n deploy, calendar generator |
 
 ## CRM automation
 
@@ -30,6 +30,7 @@ Start here:
 5. **[docs/n8n-credentials.md](docs/n8n-credentials.md)** — every secret it needs
 6. **[docs/dashboard-contract.md](docs/dashboard-contract.md)** — the JSON the CRM must return
 7. **[n8n/README.md](n8n/README.md)** — what each flow does
+8. **[docs/n8n-deploy.md](docs/n8n-deploy.md)** — push workflow changes without re-pasting secrets
 
 Copy `.env.example` to `.env` as your checklist, then `node scripts/check-creds.mjs`
 to validate the values before wiring anything up. Real values go into the n8n UI
