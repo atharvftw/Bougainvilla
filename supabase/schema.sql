@@ -112,10 +112,43 @@ create table if not exists pricing_config (
     {"min_days":  0, "price": 17000}]'::jsonb,
   fixed_monthly      numeric,
   variable_per_night numeric not null default 3000,
+  target_profit      numeric,
+  cost_lines         jsonb   not null default '{}'::jsonb,
   hold_hours         int     not null default 24
 );
 
 insert into pricing_config (id) values (1) on conflict (id) do nothing;
+
+-- ─────────────────────────────────────────────────────────────
+-- The costs, as supplied. Four of eight lines are real; the rest are
+-- null, and null is not zero — it is "nobody has told us yet". They are
+-- listed by name so the gap is visible instead of silently understating
+-- the cost base and overstating the profit.
+--
+-- Each of these updates is guarded on `is null`, so re-running this file
+-- never overwrites a number you have since corrected.
+-- ─────────────────────────────────────────────────────────────
+update pricing_config set cost_lines = jsonb_build_object(
+    'social_media', 18000,
+    'caretaker',    15000,
+    'manager',      25000,
+    'electricity',  30000,
+    'chef',         null,
+    'internet',     null,
+    'maintenance',  null,
+    'emi',          null)
+ where id = 1 and cost_lines = '{}'::jsonb;
+
+-- 18000 + 15000 + 25000 + 30000. Raise this as the missing lines arrive.
+update pricing_config set fixed_monthly = 88000
+ where id = 1 and fixed_monthly is null;
+
+-- The reference month: 15 nights sold — every weekend night plus one
+-- weekday — with weekends taken as Fri–Mon stays and the weekday at the
+-- 8–14 day tier. The conservative corner of that scenario, deliberately:
+-- a target you beat is worth more than one you admire.
+update pricing_config set target_profit = 237500
+ where id = 1 and target_profit is null;
 
 -- ─────────────────────────────────────────────────────────────
 -- What one night costs, before any discount.
@@ -804,6 +837,8 @@ as $$
     select
       c.fixed_monthly,
       c.variable_per_night,
+      c.target_profit,
+      c.cost_lines,
       (select amount from revenue)                                as revenue,
       (select nights from revenue)                                as nights_sold,
       case when (select nights from revenue) > 0
@@ -886,7 +921,15 @@ as $$
         'nights_to_break_even', case when e.fixed_monthly is not null
                                     and coalesce(e.avg_rate, 0) > e.variable_per_night
                                 then greatest(0, ceil(e.fixed_monthly / (e.avg_rate - e.variable_per_night))
-                                                 - e.nights_sold) end
+                                                 - e.nights_sold) end,
+        'target_profit',      e.target_profit,
+        'profit_vs_target',   case when e.fixed_monthly is not null and e.target_profit is not null
+                                then round(e.revenue - e.fixed_monthly
+                                           - e.variable_per_night * e.nights_sold - e.target_profit) end,
+        'cost_lines',         e.cost_lines,
+        'cost_lines_missing', (select coalesce(json_agg(k order by k), '[]'::json)
+                                 from jsonb_each(e.cost_lines) x(k, v)
+                                where v = 'null'::jsonb)
       ) from economics e
     ),
     'tariff', (select json_build_object(

@@ -124,6 +124,10 @@ tbody tr:hover{background:var(--border-soft)}
 .stay-nights{font-size:12px; color:var(--ink-3); white-space:nowrap}
 
 .money{font-variant-numeric:tabular-nums}
+.notice{margin:-8px 0 22px; padding:11px 14px; border-radius:10px;
+  background:var(--warn-soft); color:var(--ink-2); font-size:12.5px; line-height:1.6;
+  border:1px solid var(--border)}
+.notice b{color:var(--ink)}
 .tile-value.big{font-size:26px}
 
 /* ── occupancy: two proportions side by side ── */
@@ -243,7 +247,13 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px;
       <div class="tile-value" id="m-breakeven">—</div>
       <div class="tile-note" id="m-breakeven-note"></div>
     </div>
+    <div class="tile">
+      <div class="tile-label">Against target</div>
+      <div class="tile-value money" id="m-target">—</div>
+      <div class="tile-note" id="m-target-note"></div>
+    </div>
   </div>
+  <div class="notice" id="cost-gap" hidden></div>
 
   <div class="card" id="occ-card" hidden>
     <div class="card-head">
@@ -495,12 +505,27 @@ function renderMoney(e, tariff){
   $('m-nights').textContent = Number(e.nights_sold || 0).toLocaleString('en-IN');
   $('m-rate').textContent   = e.nights_sold ? `${rs(e.avg_rate)} average a night` : 'nothing sold yet';
 
+  // Null is not zero. A cost nobody has given us must not quietly flatter
+  // the profit, so say which lines are still missing.
+  const missing = Array.isArray(e.cost_lines_missing) ? e.cost_lines_missing : [];
+  const gap = $('cost-gap');
+  if(missing.length){
+    gap.hidden = false;
+    gap.innerHTML = `<b>Profit is overstated.</b> ${missing.length} cost line` +
+      `${missing.length === 1 ? '' : 's'} still missing — ` +
+      `${missing.map(m => esc(m.replace(/_/g, ' '))).join(', ')}. ` +
+      `Add them to <code>pricing_config.cost_lines</code> and raise ` +
+      `<code>fixed_monthly</code> to match.`;
+  } else { gap.hidden = true; }
+
   const haveCosts = e.fixed_monthly !== null && e.fixed_monthly !== undefined;
   if(!haveCosts){
     $('m-profit').textContent      = '—';
     $('m-profit-note').textContent = 'set fixed_monthly in pricing_config';
     $('m-breakeven').textContent   = '—';
     $('m-breakeven-note').textContent = 'needs your monthly costs';
+    $('m-target').textContent      = '—';
+    $('m-target-note').textContent = '';
     return;
   }
 
@@ -515,9 +540,19 @@ function renderMoney(e, tariff){
     ? (togo > 0 ? `${togo} night${togo === 1 ? '' : 's'}` : 'covered')
     : '—';
   $('m-breakeven-note').textContent = Number.isFinite(togo)
-    ? (togo > 0 ? `${e.break_even_nights} needed, ${e.nights_sold} sold`
-                : `${e.break_even_nights} needed, ${e.nights_sold} sold`)
+    ? `${e.break_even_nights} needed, ${e.nights_sold} sold`
     : 'average rate is below the per-night cost';
+
+  const vs = e.profit_vs_target;
+  if(vs === null || vs === undefined){
+    $('m-target').textContent      = '—';
+    $('m-target-note').textContent = 'set target_profit in pricing_config';
+  } else {
+    const n = Number(vs);
+    $('m-target').textContent = (n < 0 ? '-' : '+') + rs(Math.abs(n));
+    $('m-target').style.color = n < 0 ? 'var(--warn)' : 'var(--good)';
+    $('m-target-note').textContent = `${rs(e.target_profit)} is the reference month`;
+  }
 }
 
 // The one comparison that decides what to discount. Colour carries the

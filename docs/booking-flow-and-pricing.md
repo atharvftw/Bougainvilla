@@ -141,20 +141,46 @@ Variable=  laundry + gas + consumables + deep clean + welcome kit
                                                 ← per booked night only
 ```
 
-**I need your actual numbers for Fixed and Variable.** Everything below is
-structurally right but the break-even point moves with them.
+### The costs, as supplied
 
-### Break-even, nights per month at weekend price
+| Line | ₹ / month |
+|---|---|
+| Social media | 18,000 |
+| Caretaker | 15,000 |
+| Manager | 25,000 |
+| Electricity | 30,000 |
+| **Supplied total** | **88,000** |
+| Chef | *not supplied* |
+| Internet | *not supplied* |
+| Maintenance | *not supplied* |
+| Loan / EMI | *not supplied* |
 
-| Fixed / month | V=₹2,000 | V=₹3,000 | V=₹4,000 |
-|---|---|---|---|
-| ₹1,50,000 | 5.4 | 5.6 | 5.8 |
-| ₹2,50,000 | 8.9 | 9.3 | 9.6 |
-| ₹3,50,000 | 12.5 | 13.0 | 13.5 |
-| ₹4,00,000 | 14.3 | 14.8 | 15.4 |
+Four of eight lines are real; the rest are null in `pricing_config.cost_lines`,
+and **null is not zero**. Every profit number below is therefore an upper
+bound, and the dashboard says so on its face rather than quietly flattering
+the month.
 
-If fixed cost is ₹3.5L, you need ~13 nights just to stand still. August sold
-14. That is the whole story.
+Variable cost is held at ₹3,000 a night — laundry, gas, consumables, a deep
+clean. That one is an assumption too; it was not supplied.
+
+> If the chef is paid per booking rather than monthly, that is not a missing
+> fixed cost at all — it belongs in `variable_per_night`. Worth deciding which,
+> because it changes the discount floor.
+
+### Break-even is the surprise
+
+On ₹88,000 of known fixed cost, a weekend night contributes ₹27,000 after its
+variable cost. So:
+
+**The villa covers its known monthly costs in four weekend nights.**
+
+Everything after that is contribution, which reframes the whole discount
+argument. You are not discounting to survive the month — the month is already
+paid for by the second weekend. You are discounting to convert nights that
+would otherwise earn nothing at all.
+
+At the ₹17,000 floor a weekday night still contributes ₹14,000, so even the
+deepest discount pays a full month's known costs in seven nights.
 
 ## Where you actually are
 
@@ -214,6 +240,64 @@ alternative is not "sell at ₹28,000" — the alternative is an empty villa.
 
 ---
 
+# Part 2b · The reference month
+
+**15 nights sold: every weekend night, plus one weekday.** This is the shape
+you described, and it is the number to beat.
+
+October 2026 has 14 weekend nights and 17 weekday nights, so 15 nights means
+all 14 weekends plus one Mon–Thu.
+
+| How the weekends sell | Weekend revenue | + 1 weekday | Profit |
+|---|---|---|---|
+| Fri + Sat, Sunday booked separately | 4,20,000 | at list 28,000 | **3,15,000** |
+| Fri + Sat, Sunday booked separately | 4,20,000 | at 22,500 | 3,09,500 |
+| Fri–Mon stays, Sunday at the add-on | 3,48,000 | at list 28,000 | 2,43,000 |
+| **Fri–Mon stays, Sunday at the add-on** | **3,48,000** | **at 22,500** | **2,37,500** |
+
+All four are `revenue − 88,000 fixed − 45,000 variable`.
+
+**The reference is set to ₹2,37,500** — the bottom corner, deliberately. A
+target you beat is worth more than one you admire, and the top corner assumes
+Sundays sell as their own full-price bookings, which is the optimistic read.
+
+It lives in `pricing_config.target_profit`, and the dashboard shows the month
+running against it.
+
+Add the four missing cost lines and it moves down, one rupee for one rupee:
+
+| Extra fixed / month | Reference profit |
+|---|---|
+| 0 | 2,37,500 |
+| 50,000 | 1,87,500 |
+| 1,00,000 | 1,37,500 |
+| 1,50,000 | 87,500 |
+
+## Next month, priced
+
+October: 14 weekend nights, 17 weekday. Weekends have run 79% full, so assume
+11 sell — three full Fri–Mon weekends and one Fri+Sat, ₹2,76,000.
+
+| Weekday nights sold | At | Revenue | Profit | vs reference |
+|---|---|---|---|---|
+| 0 | — | 2,76,000 | 1,55,000 | −82,500 |
+| 2 | 25,000 · 15–21d | 3,26,000 | 1,99,000 | −38,500 |
+| **4** | **22,500 · 8–14d** | **3,66,000** | **2,33,000** | **−4,500** |
+| 6 | 22,500 · 8–14d | 4,11,000 | 2,72,000 | **+34,500** |
+| 8 | 21,000 · midweek3 | 4,44,000 | 2,99,000 | **+61,500** |
+| 10 | 19,500 · 4–7d | 4,71,000 | 3,20,000 | **+82,500** |
+| 12 | 17,000 · floor | 4,80,000 | 3,23,000 | **+85,500** |
+
+**Six weekday nights beats the reference. Ten roughly doubles the profit over
+selling weekends alone.** Note the last row: dropping from 19,500 to the
+17,000 floor buys two more nights and only ₹3,000 more profit — that is the
+floor doing its job, and the evidence for not going below it.
+
+The operational target for October: **sell 6–8 Mon–Thu nights.** The dashboard's
+empty-weekday-nights queue is the list to work from.
+
+---
+
 # Part 3 · Dynamic weekday pricing
 
 ## Rule zero: never discount a weekend
@@ -267,30 +351,35 @@ Built, and live in the page:
 | Break-even | fixed ÷ (avg rate − variable) |
 | Nights to break-even | break-even − nights sold |
 | Profit | revenue − fixed − (variable × nights) |
+| **Against target** | profit − `target_profit` ← *the reference month* |
 | Empty weekday nights, next 14 days | the discount ladder's work queue |
+
+Plus a banner naming any cost line still missing, so nobody reads a profit
+figure as final when four of the eight inputs are null.
 
 The last one is the operational one: a list of dates the manager (or a
 scheduled n8n post) should be pushing offers on this week, each with the price
 the ladder currently asks.
 
-Profit, break-even and nights-to-break-even stay blank until
-`pricing_config.fixed_monthly` has your real numbers in it. The page says what
-is missing rather than showing a confident wrong figure.
+Profit, break-even and against-target stay blank until
+`pricing_config.fixed_monthly` and `target_profit` have real numbers in them.
+The page says what is missing rather than showing a confident wrong figure.
 
 ---
 
-# What I need from you
+# Settled, and still open
 
-The plan is complete except for costs. Ballpark monthly figures:
+**Friday is a weekend.** `weekend_dows = {5,6,0}` — the default, nothing to
+change.
 
-- chef, caretaker, manager, social media — salaries
-- electricity, internet, maintenance
-- any loan or EMI on the property
-- and roughly what a single booked night costs in laundry, gas and consumables
+**Four cost lines are in:** social media, caretaker, manager, electricity.
 
-With those I can fill in the break-even, set the discount floor from real
-numbers rather than a guess, and give you a monthly target that means
-something.
+**Four are not,** and until they arrive every profit figure in this document is
+an upper bound. Each is one number in `pricing_config`:
 
-Also worth deciding: **is Friday a weekend or a weekday for pricing?** It sits
-on the boundary and moves ~4 nights a month between the two buckets.
+- chef, internet, maintenance, EMI — and, for the chef, whether it is paid
+  monthly (fixed) or per booking (variable, which changes the discount floor)
+- the real variable cost of a booked night, currently assumed ₹3,000
+
+Then: `update pricing_config set fixed_monthly = <new total> where id = 1;`
+and the reference and every tile move with it.
