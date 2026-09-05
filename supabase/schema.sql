@@ -102,19 +102,30 @@ create table if not exists pricing_config (
   max_pax            int     not null default 20,
   weekend_dows       int[]   not null default '{5,6,0}',
   weekday_floor      numeric not null default 17000,
-  midweek3_discount  numeric not null default 0.25,
+  midweek3_discount  numeric not null default 0.10,
   sunday_addon       numeric not null default 12000,
   ladder             jsonb   not null default '[
-    {"min_days": 22, "price": 28000},
-    {"min_days": 15, "price": 25000},
-    {"min_days":  8, "price": 22500},
-    {"min_days":  4, "price": 19500},
+    {"min_days": 22, "price": 20000},
+    {"min_days": 15, "price": 20000},
+    {"min_days":  8, "price": 19000},
+    {"min_days":  4, "price": 18000},
     {"min_days":  0, "price": 17000}]'::jsonb,
   fixed_monthly      numeric,
   variable_per_night numeric not null default 3000,
   target_profit      numeric,
   cost_lines         jsonb   not null default '{}'::jsonb,
-  hold_hours         int     not null default 24
+  hold_hours         int     not null default 24,
+
+  -- The number your ads teach the market. Advertise this attached to a
+  -- condition (Mon-Thu, 3 nights, 21 days ahead) and it anchors that
+  -- condition. Advertise it bare and it becomes what the villa is worth,
+  -- and every weekend quote then reads as a markup.
+  advertised_rate    numeric default 20000,
+
+  -- What the weekend rate buys that the weekday rate does not. A weekend
+  -- that is "the same villa for 10,000 more" is a hard sell; a weekend
+  -- that is a different package is not. Set to '' to say nothing.
+  weekend_includes   text    not null default ''
 );
 
 insert into pricing_config (id) values (1) on conflict (id) do nothing;
@@ -138,6 +149,40 @@ update pricing_config set cost_lines = jsonb_build_object(
     'maintenance',  null,
     'emi',          null)
  where id = 1 and cost_lines = '{}'::jsonb;
+
+-- ─────────────────────────────────────────────────────────────
+-- The ladder the ads already imply.
+--
+-- The old ladder ran 28,000 down to 17,000 — an 11,000 gain for waiting,
+-- and a top tier that contradicted a "from 20,000" ad. A guest who came
+-- from that ad and got quoted 28,000 does not haggle, they leave, and a
+-- lost lead costs the whole night rather than 8,000 of margin.
+--
+-- The new spread is 3,000, so nobody games it, and the advertised number
+-- is one the agent can actually quote. It earns ~1,500 less a night and
+-- needs about 22% more weekday nights to break even — an easy trade at
+-- 11-18% weekday occupancy, and a bad one if midweek ever fills up.
+--
+-- Guarded on the old value, so a ladder you have since tuned is left alone.
+-- ─────────────────────────────────────────────────────────────
+update pricing_config set ladder = '[
+    {"min_days": 22, "price": 20000},
+    {"min_days": 15, "price": 20000},
+    {"min_days":  8, "price": 19000},
+    {"min_days":  4, "price": 18000},
+    {"min_days":  0, "price": 17000}]'::jsonb
+ where id = 1 and ladder = '[
+    {"min_days": 22, "price": 28000},
+    {"min_days": 15, "price": 25000},
+    {"min_days":  8, "price": 22500},
+    {"min_days":  4, "price": 19500},
+    {"min_days":  0, "price": 17000}]'::jsonb;
+
+-- Was 0.25 off a 28,000 list price. Now 0.10 off whichever tier applies,
+-- which on the 20,000 entry rate is 18,000 a night for a 3-night midweek
+-- stay: one arrival, one changeover, one deep clean.
+update pricing_config set midweek3_discount = 0.10
+ where id = 1 and midweek3_discount = 0.25;
 
 -- 18000 + 15000 + 25000 + 30000. Raise this as the missing lines arrive.
 update pricing_config set fixed_monthly = 88000
@@ -247,8 +292,11 @@ begin
 
       -- three or more Mon–Thu nights: one arrival, one changeover, one
       -- deep clean. The cheapest revenue the villa will ever earn.
-      if v_weekday_n >= 3 and c.base_weekday * (1 - c.midweek3_discount) < v_price then
-        v_price  := c.base_weekday * (1 - c.midweek3_discount);
+      -- Off the tier that actually applies, not off the list price: with a
+      -- 20,000 entry rate a discount computed from 28,000 lands above it and
+      -- the three-night offer silently never fires.
+      if v_weekday_n >= 3 then
+        v_price  := v_price * (1 - c.midweek3_discount);
         v_reason := 'midweek3';
       end if;
 
@@ -267,6 +315,62 @@ begin
     reason     := v_reason;
     return next;
   end loop;
+end;
+$$;
+
+-- ─────────────────────────────────────────────────────────────
+-- The nearest Mon–Thu opening.
+--
+-- This is the answer to "that's too expensive". A guest priced out of a
+-- weekend is not a lost booking, they are a weekday booking that has not
+-- been offered yet — and weekdays are the nights that earn nothing today.
+--
+-- The run must be entirely Mon–Thu and entirely free.
+-- ─────────────────────────────────────────────────────────────
+create or replace function next_midweek_opening(
+  p_from        date,
+  p_nights      int  default 1,
+  p_horizon     int  default 28,
+  p_property_id text default 'bougainvilla'
+) returns json
+language plpgsql stable
+as $$
+declare
+  c       pricing_config%rowtype;
+  v_start date;
+  v_from  date;
+  v_total numeric;
+begin
+  select * into c from pricing_config where id = 1;
+  if p_nights is null or p_nights < 1 then p_nights := 1; end if;
+  v_from := greatest(coalesce(p_from, current_date), current_date);
+
+  select min(x.cand) into v_start
+  from (select g::date as cand
+          from generate_series(v_from, v_from + p_horizon, '1 day') g) x
+  where not exists (
+          select 1 from generate_series(x.cand, x.cand + (p_nights - 1), '1 day') d
+           where extract(dow from d)::int = any(c.weekend_dows))
+    and not exists (
+          select 1 from leads l
+           where l.check_in is not null
+             and (l.booking_status in ('booked','occupied')
+                  or (l.booking_status = 'held' and l.hold_expires_at > now()))
+             and coalesce(l.property_id,'bougainvilla') = coalesce(p_property_id,'bougainvilla')
+             and x.cand < greatest(l.check_out, l.check_in + 1)
+             and l.check_in < x.cand + p_nights);
+
+  if v_start is null then return null; end if;
+
+  select sum(t.price) into v_total from tariff_nightly(v_start, p_nights, null, current_date) t;
+
+  return json_build_object(
+    'check_in',  v_start,
+    'check_out', v_start + p_nights,
+    'nights',    p_nights,
+    'total',     v_total,
+    'per_night', round(v_total / p_nights),
+    'saving',    (c.base_weekend * p_nights) - v_total);
 end;
 $$;
 
@@ -302,6 +406,7 @@ declare
   v_villa  numeric;
   v_extra  numeric;
   v_list   numeric;
+  v_we_n   int;
 begin
   select * into c from pricing_config where id = 1;
 
@@ -361,8 +466,9 @@ begin
            'price', t.price, 'reason', t.reason) order by t.night), '[]'::json),
          coalesce(sum(t.price), 0),
          coalesce(sum(t.extra_pax), 0),
-         coalesce(sum(t.list_price), 0)
-    into v_rows, v_villa, v_extra, v_list
+         coalesce(sum(t.list_price), 0),
+         count(*) filter (where t.kind = 'weekend')
+    into v_rows, v_villa, v_extra, v_list, v_we_n
   from tariff_nightly(v_in, v_n, v_pax, current_date) t;
 
   return json_build_object(
@@ -382,6 +488,13 @@ begin
     'discount',     (v_list - v_villa),
     'discount_pct', case when v_list > 0
                       then round((v_list - v_villa) * 100 / v_list) else 0 end,
+    'weekend_nights',   v_we_n,
+    'weekend_includes', case when v_we_n > 0 then nullif(c.weekend_includes, '') end,
+    'advertised_rate',  c.advertised_rate,
+    -- offered only when the guest is looking at weekend nights: a weekday
+    -- enquiry is already in the bucket we want to fill
+    'midweek_alternative', case when v_we_n > 0
+                             then next_midweek_opening(v_in, v_n, 28, p_property_id) end,
     'hold_hours',   c.hold_hours,
     'message',      'These dates are free.');
 end;
