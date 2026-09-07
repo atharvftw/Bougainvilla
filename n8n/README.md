@@ -5,7 +5,11 @@
 Setup: [../docs/deploy.md](../docs/deploy.md) ·
 Secrets: [../docs/n8n-credentials.md](../docs/n8n-credentials.md)
 
-## Seven independent flows in one workflow
+> **Node-by-node reference:** [`WORKFLOW-CONTEXT.md`](./WORKFLOW-CONTEXT.md)
+> — what every one of the 61 nodes does, which flows are live, and which are
+> still placeholders.
+
+## Eight independent flows in one workflow
 
 | Trigger | What it does |
 |---|---|
